@@ -168,9 +168,11 @@ async function handle(req, env, h) {
     if (txt.length > MAX_JSON) return json({ error: "datos", mensaje: "Registro demasiado grande." }, 400, h);
     let d; try { d = JSON.parse(txt); } catch { return json({ error: "datos", mensaje: "Formato inválido." }, 400, h); }
     const e = validarFechaTurno(d.fecha, d.turno); if (e) return json({ error: "datos", mensaje: e }, 400, h);
-    const items = {};
+    const parte = d.parte;
+    if (!["A", "B"].includes(parte)) return json({ error: "datos", mensaje: "Parte inválida." }, 400, h);
+    const nuevos = {};
     const fotoPre = carpetaFotos(sala, d.fecha) + "/";
-    for (const k of ALL_KEYS) {
+    for (const k of ALL_KEYS.filter(k => k[0] === parte)) {
       const it = d.items?.[k]; if (!it) continue;
       if (!["C", "NC", "NA"].includes(it.estado)) return json({ error: "datos", mensaje: "Estado inválido en " + k }, 400, h);
       const o = { estado: it.estado, obs: limpiar(it.obs, 1000) };
@@ -178,29 +180,43 @@ async function handle(req, env, h) {
         if (typeof it.foto !== "string" || !it.foto.startsWith(fotoPre) || it.foto.includes("..")) return json({ error: "datos", mensaje: "Foto inválida en " + k }, 400, h);
         o.foto = it.foto;
       }
-      items[k] = o;
+      nuevos[k] = o;
     }
     const ruta = rutaRegistro(sala, d.fecha, d.turno);
     const prevR = await gGet(env, ruta);
     const prev = prevR ? await prevR.json() : null;
     const ahora = new Date().toISOString();
+    // Cada parte (A = antes, B = después) se guarda por separado: se conserva la otra parte tal como estaba.
+    const items = {};
+    for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== parte && ALL_KEYS.includes(k)) items[k] = it;
+    Object.assign(items, nuevos);
+    const partes = { ...(prev?.partes || {}) };
+    partes[parte] = {
+      completadoPor: limpiar(d.completadoPor, 80),
+      horaRegistro: /^\d{2}:\d{2}$/.test(d.horaRegistro || "") ? d.horaRegistro : "",
+      actualizadoEn: ahora, dispositivo: limpiar(d.dispositivo, 40),
+      ediciones: (prev?.partes?.[parte]?.ediciones ?? -1) + 1,
+    };
     const doc = {
       id: `${sala.id}_${d.fecha}_${d.turno}`,
       salaId: sala.id, sala: sala.nombre, predio: sala.predio || "",
       fecha: d.fecha, turno: d.turno,
-      completadoPor: limpiar(d.completadoPor, 80), horaRegistro: /^\d{2}:\d{2}$/.test(d.horaRegistro || "") ? d.horaRegistro : "",
-      area: limpiar(d.area, 60), administrador: limpiar(d.administrador, 80), responsable: limpiar(d.responsable, 80),
-      items,
+      area: limpiar(d.area, 60) || prev?.area || "",
+      administrador: limpiar(d.administrador, 80) || prev?.administrador || "",
+      responsable: limpiar(d.responsable, 80) || prev?.responsable || "",
+      partes, items,
       seguimiento: prev?.seguimiento || {},
       creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora,
-      ediciones: (prev?.ediciones || 0) + (prev ? 1 : 0),
-      dispositivo: limpiar(d.dispositivo, 40),
-      version: "CL-LEC-01 v01",
+      version: "CL-LEC-01 v02",
     };
     const n = ALL_KEYS.filter(k => items[k]).length;
     doc.estado = n === ALL_KEYS.length ? "completo" : n ? "parcial" : "vacío";
+    doc.estadoPartes = Object.fromEntries(Object.entries(ITEMS).map(([S, tot]) => {
+      const c = Object.keys(items).filter(k => k[0] === S).length;
+      return [S, c === tot ? "completa" : c ? "parcial" : "pendiente"];
+    }));
     await gPut(env, ruta, JSON.stringify(doc, null, 1), "application/json");
-    return json({ ok: true, estado: doc.estado, actualizadoEn: ahora }, 200, h);
+    return json({ ok: true, estado: doc.estado, estadoPartes: doc.estadoPartes, actualizadoEn: ahora }, 200, h);
   }
 
   return json({ error: "ruta" }, 404, h);
