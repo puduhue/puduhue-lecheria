@@ -60,7 +60,7 @@ nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4p
 section.view{padding-top:18px;display:flex;flex-direction:column;gap:16px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 160px}
 input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
 textarea{resize:vertical;min-height:60px}
@@ -145,6 +145,13 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 .syncbar.err .dot{background:var(--bad)}
 .center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
 .center img{width:88px;height:88px}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;line-height:1.3;text-align:left;background:var(--surface)}
+input::-webkit-date-and-time-value{text-align:left;margin:0}
+.hr-row{display:flex;gap:8px;align-items:stretch;min-width:0}
+.hr-row input{flex:1 1 auto;width:auto}
+.hr-row .btn{flex:0 0 auto}
+.fijo{min-height:44px;display:flex;align-items:center;padding:9px 10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-weight:600}
+.card,.field,.grid2>*{min-width:0}
 .seg.partes{margin:0;grid-template-columns:1fr 1fr}
 .seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
 .seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
@@ -192,13 +199,12 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="grid2">
-        <label class="field"><span class="lbl" id="f-quien-lbl">Nombre de quien completa *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
-        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado *</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
+        <label class="field"><span class="lbl" id="f-quien-lbl">Responsable (quien completa) *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
+        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado *</span><div class="hr-row"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
       </div>
       <div class="grid2">
-        <label class="field"><span class="lbl">Área</span><input id="f-area" placeholder="Ordeña"></label>
         <label class="field"><span class="lbl">Administrador *</span><input id="f-admin" placeholder="Nombre del administrador"></label>
-        <label class="field"><span class="lbl">Responsable</span><input id="f-resp" placeholder="Nombre del responsable"></label>
+        <div class="field"><span class="lbl">Área</span><div class="fijo">Sala de ordeña</div></div>
       </div>
     </div>
     <div id="f-sections"></div>
@@ -218,7 +224,7 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 
 <script>
 (() => {
-const VERSION = "4";
+const VERSION = "5";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -331,10 +337,11 @@ let draft = null, saving = false, remoto = null;
 const slotKey = (f, t) => `${f}_${t}`;
 const secKeys = S => ALL_KEYS.filter(k => k[0] === S);
 const PARTE_LBL = {A: "Antes de ordeñar", B: "Después de ordeñar"};
+const AREA = "Sala de ordeña";
 const defaultTurno = () => new Date().getHours() < 12 ? "AM" : "PM";
 function emptyDraft(fecha, turno){
   const q = ls.get("lec.quien") || "";
-  return { fecha, turno, parte: null, area: ls.get("lec.area") || "Ordeña", administrador: ls.get("lec.admin") || "", responsable: ls.get("lec.resp") || "",
+  return { fecha, turno, parte: null, area: AREA, administrador: ls.get("lec.admin") || "", responsable: "",
     partes: {A: {completadoPor: q, horaRegistro: ""}, B: {completadoPor: q, horaRegistro: ""}}, items: {}, mod: {A: false, B: false}, est: {A: null, B: null} };
 }
 function parteInfo(S){
@@ -360,7 +367,7 @@ function mergeRemoto(r){
     if (pm) draft.partes[S] = {completadoPor: pm.completadoPor || "", horaRegistro: pm.horaRegistro || ""};
     draft.est[S] = "enviado";
   }
-  if (!draft.mod.A && !draft.mod.B) ["area", "administrador", "responsable"].forEach(f => { if (r[f]) draft[f] = r[f]; });
+  if (!draft.mod.A && !draft.mod.B && r.administrador) draft.administrador = r.administrador;
 }
 async function loadSlot(fecha, turno, parte){
   draft = (await idb.get("drafts", slotKey(fecha, turno))) || emptyDraft(fecha, turno);
@@ -423,8 +430,8 @@ function renderPartes(){
     b.setAttribute("aria-pressed", S === draft.parte);
     b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${inf.txt}</span>`;
   });
-  $("f-quien-lbl").textContent = `Nombre de quien completa «${PARTE_LBL[draft.parte]}» *`;
-  $("f-hr-lbl").textContent = `Hora de llenado de esta parte *`;
+  $("f-quien-lbl").textContent = `Responsable de «${PARTE_LBL[draft.parte]}» (quien completa) *`;
+  $("f-hr-lbl").textContent = `Hora de llenado *`;
   $("f-save").textContent = draft.parte === "A" ? "Guardar · Antes" : "Guardar · Después";
 }
 function renderForm(){
@@ -433,7 +440,7 @@ function renderForm(){
   document.querySelectorAll("#f-turno button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === draft.turno));
   const P = draft.partes[draft.parte];
   $("f-quien").value = P.completadoPor || ""; $("f-hr").value = P.horaRegistro || "";
-  $("f-area").value = draft.area || ""; $("f-admin").value = draft.administrador || ""; $("f-resp").value = draft.responsable || "";
+  $("f-admin").value = draft.administrador || "";
   renderPartes();
   const ex = $("f-existing"), est = draft.est[draft.parte];
   if (draft.mod[draft.parte] && est) { ex.hidden = false; ex.textContent = `Estás modificando «${PARTE_LBL[draft.parte]}». Al guardar, reemplaza lo ${est === "pendiente" ? "guardado" : DEMO ? "guardado" : "enviado"} antes.`; }
@@ -514,8 +521,7 @@ $("f-fecha").addEventListener("change", async e => {
 });
 $("f-quien").addEventListener("input", e => { draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
 $("f-hr").addEventListener("input", e => { draft.partes[draft.parte].horaRegistro = e.target.value; markDirty(); });
-[["f-area","area"],["f-admin","administrador"],["f-resp","responsable"]].forEach(([id, f]) =>
-  $(id).addEventListener("input", e => { draft[f] = e.target.value; markDirty(); }));
+$("f-admin").addEventListener("input", e => { draft.administrador = e.target.value; markDirty(); });
 $("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.partes[draft.parte].horaRegistro = $("f-hr").value; markDirty(); };
 
 /* ---------- fotos ---------- */
@@ -576,7 +582,7 @@ $("f-save").onclick = async () => {
   const S = draft.parte, P = draft.partes[S];
   const p = problems();
   if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
-  if (!P.completadoPor?.trim()){ toast("Escribe el nombre de quien completa esta parte."); $("f-quien").focus(); return; }
+  if (!P.completadoPor?.trim()){ toast("Escribe el nombre del responsable (quien completa)."); $("f-quien").focus(); return; }
   if (!P.horaRegistro){ toast("Indica la hora de llenado."); $("f-hr").focus(); return; }
   if (!draft.administrador?.trim()){ toast("Indica el nombre del administrador."); $("f-admin").focus(); return; }
   if (!secKeys(S).some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
@@ -584,11 +590,11 @@ $("f-save").onclick = async () => {
   try {
     const items = {};
     secKeys(S).forEach(k => { if (draft.items[k]?.estado) items[k] = JSON.parse(JSON.stringify(draft.items[k])); });
-    const job = { fecha: draft.fecha, turno: draft.turno, parte: S, area: draft.area || "", administrador: draft.administrador.trim(), responsable: (draft.responsable || "").trim(),
+    const job = { fecha: draft.fecha, turno: draft.turno, parte: S, area: AREA, administrador: draft.administrador.trim(), responsable: P.completadoPor.trim(),
       completadoPor: P.completadoPor.trim(), horaRegistro: P.horaRegistro, items, creado: Date.now() };
     await idb.put("outbox", `${slotKey(draft.fecha, draft.turno)}_${S}`, job);
     draft.mod[S] = false; draft.est[S] = "pendiente"; await persistDraft();
-    ls.set("lec.quien", job.completadoPor); ls.set("lec.admin", job.administrador); ls.set("lec.resp", job.responsable); ls.set("lec.area", job.area);
+    ls.set("lec.quien", job.completadoPor); ls.set("lec.admin", job.administrador);
     $("f-save").textContent = "Enviando…";
     const ok = await trySync();
     const completa = secKeys(S).every(k => draft.items[k]?.estado);
