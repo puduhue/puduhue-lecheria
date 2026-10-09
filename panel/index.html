@@ -151,6 +151,13 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 .fijo{min-height:44px;display:flex;align-items:center;padding:9px 10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-weight:600}
 .card,.field,.grid2>*{min-width:0}
 .seg.partes{margin:0;grid-template-columns:1fr 1fr}
+#f-turno button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px}
+#f-turno .pt{font:700 18px var(--f-display);letter-spacing:.04em}
+#f-turno button[aria-pressed="true"] .chip{background:var(--surface)}
+.quien{font:600 12px var(--f-body);opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.ro .ro-res{margin-left:38px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.item.ro .ro-obs{font-size:14px;color:var(--bad);background:var(--bad-soft);padding:6px 10px;border-radius:6px}
+input:disabled,button:disabled{opacity:.6}
 .seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
 .seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
 .seg.partes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -282,6 +289,11 @@ table.mapa td:nth-child(2){padding-left:8px}
 table.mapa tbody .mp-sala,table.mapa thead .mp-sala{border-right:1px solid var(--line)}
 
 .tema-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:36px;height:36px;padding:0;font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
+.cambios{font-size:13.5px}
+.cambios summary{cursor:pointer;color:var(--accent);font-weight:600}
+.cambios ul{margin:4px 0 8px;padding-left:18px}
+.cambio{border-left:3px solid var(--line);padding-left:10px;margin-top:6px}
 
 </style>
 <script src="../config.js"></script>
@@ -521,6 +533,15 @@ function genRegistro(sala, fecha, turno){
     }
   }
   if (!Object.keys(r.partes).length){ regCache[id] = null; return null; }
+  const RH = rng(hashStr(id + "h"));
+  for (const S of Object.keys(r.partes)) if (RH() < 0.06){
+    const ks = secKeys(S).filter(k => r.items[k]); if (!ks.length) continue;
+    const k = ks[Math.floor(RH() * ks.length)], antes = Object.fromEntries(ks.map(x => [x, {...r.items[x]}]));
+    antes[k] = {...antes[k], estado: antes[k].estado === "C" ? "NC" : "C", obs: antes[k].estado === "C" ? "Marcado por error" : ""};
+    const [hh, mm] = r.partes[S].horaRegistro.split(":").map(Number);
+    r.historial = (r.historial || []).concat([{parte: S, guardadoEn: new Date(`${fecha}T${pad(hh)}:${pad(Math.max(0, mm - 3))}:00`).toISOString(), completadoPor: r.partes[S].completadoPor, items: antes}]);
+    r.partes[S].actualizadoEn = new Date(`${fecha}T${pad(hh)}:${pad(mm)}:00`).toISOString();
+  }
   const seg = lsJson("lec.panel.seg", {});
   for (const [key, v] of Object.entries(seg)){ const [rid, k] = key.split("|"); if (rid === id) r.seguimiento[k] = v; }
   regCache[id] = r; return r;
@@ -681,6 +702,49 @@ $("hoy-fecha").onchange = hoyCon;
 $("hoy-prev").onclick = () => { $("hoy-fecha").value = addDays($("hoy-fecha").value || todayStr(), -1); hoyCon(); };
 $("hoy-next").onclick = () => { const n = addDays($("hoy-fecha").value || todayStr(), 1); if (n <= todayStr()){ $("hoy-fecha").value = n; hoyCon(); } };
 
+/* ---------- historial de cambios de una parte ---------- */
+const ESTADO_TXT = {C: "Cumple", NC: "No cumple", NA: "N/A"};
+function cambiosParte(r, S){
+  const prev = (r.historial || []).filter(h => h.parte === S).sort((a, b) => String(a.guardadoEn).localeCompare(String(b.guardadoEn)));
+  if (!prev.length) return "";
+  const versiones = [...prev, {guardadoEn: r.partes[S].actualizadoEn, completadoPor: r.partes[S].completadoPor, horaRegistro: r.partes[S].horaRegistro, items: Object.fromEntries(Object.entries(r.items).filter(([k]) => k[0] === S))}];
+  const hora = iso => { if (!iso) return ""; const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const filas = [];
+  for (let i = 1; i < versiones.length; i++){
+    const a = versiones[i - 1], b = versiones[i], difs = [];
+    for (const k of secKeys(S)){
+      const x = a.items[k], y = b.items[k];
+      if ((x?.estado || "") !== (y?.estado || "")) difs.push(`<li><b>${+k.slice(1)}.</b> ${x ? ESTADO_TXT[x.estado] : "sin respuesta"} → <b>${y ? ESTADO_TXT[y.estado] : "sin respuesta"}</b></li>`);
+      else if ((x?.obs || "") !== (y?.obs || "")) difs.push(`<li><b>${+k.slice(1)}.</b> cambió la observación: «${esc(x?.obs || "")}» → «${esc(y?.obs || "")}»</li>`);
+      else if ((x?.foto || "") !== (y?.foto || "")) difs.push(`<li><b>${+k.slice(1)}.</b> se cambió la foto</li>`);
+    }
+    if (a.completadoPor !== b.completadoPor) difs.push(`<li>Responsable: ${esc(a.completadoPor)} → <b>${esc(b.completadoPor)}</b></li>`);
+    filas.push(`<div class="cambio"><span class="sub" style="font-size:12.5px">${hora(b.guardadoEn)} · ${esc(b.completadoPor || "")}</span><ul>${difs.join("") || "<li>Se guardó de nuevo sin cambios en las respuestas.</li>"}</ul></div>`);
+  }
+  return `<details class="cambios"><summary>✏️ Editado ${prev.length} ${prev.length === 1 ? "vez" : "veces"} · ver cambios</summary><div class="sub" style="font-size:12.5px;margin:6px 0">Primera versión: ${hora(prev[0].guardadoEn)} · ${esc(prev[0].completadoPor || "")}</div>${filas.join("")}</details>`;
+}
+function bloqueCorreccion(r, S){
+  const d = r.desbloqueo?.[S], activo = d && Date.parse(d.hasta) > Date.now();
+  if (activo) return `<div class="notice info" style="font-size:13.5px">🔓 Corrección habilitada por ${esc(d.por)} hasta el ${fmtFecha(d.hasta.slice(0, 10))} ${d.hasta.slice(11, 16)} UTC. Motivo: ${esc(d.motivo)}</div>`;
+  if (user.rol !== "admin") return "";
+  return `<button class="btn small" type="button" data-desb="${S}">🔓 Habilitar corrección</button>`;
+}
+function dlgDesbloquear(r, S){
+  abrir("Habilitar corrección", `<p>La parte <b>${PARTE_LBL[S]}</b> de la sala <b>${esc(r.sala)}</b> (${fmtFecha(r.fecha)} ${r.turno}) quedará abierta durante <b>24 horas</b> para que se pueda corregir desde cualquier teléfono con el QR de la sala. La versión actual se guarda en el historial.</p>
+    <label class="field"><span class="lbl">Motivo de la corrección *</span><textarea id="d-mot" rows="2" placeholder="Ej.: El ordeñador marcó por error 'No cumple' en el ítem 3."></textarea></label>
+    <div class="li-actions" style="justify-content:flex-end"><button class="btn" type="button" id="d-no">Cancelar</button><button class="btn primary" type="button" id="d-si">Habilitar</button></div>`);
+  $("d-no").onclick = () => verDetalle(r, S);
+  $("d-si").onclick = async () => {
+    const m = $("d-mot").value.trim(); if (!m){ toast("Indica el motivo."); return; }
+    $("d-si").disabled = true;
+    try {
+      if (DEMO){ r.desbloqueo = r.desbloqueo || {}; r.desbloqueo[S] = {hasta: new Date(Date.now() + 86400000).toISOString(), por: user.nombre, motivo: m}; }
+      else { const j = await api("/api/admin/desbloquear", {method: "POST", body: JSON.stringify({salaId: r.salaId, fecha: r.fecha, turno: r.turno, parte: S, motivo: m})}); r.desbloqueo = r.desbloqueo || {}; r.desbloqueo[S] = j.desbloqueo; }
+      toast("Corrección habilitada por 24 horas."); verDetalle(r, S);
+    } catch (e) { toast(e.message, 5000); $("d-si").disabled = false; }
+  };
+}
+
 /* ---------- detalle de un check list ---------- */
 function verDetalle(r, foco){
   const orden = foco === "B" ? ["B", "A"] : ["A", "B"];
@@ -690,13 +754,15 @@ function verDetalle(r, foco){
       const ic = it ? {C: "✓", NC: "✕", NA: "N/A"}[it.estado] : "—", cls = it ? it.estado : "X";
       return `<div class="det-it"><span class="ic ${cls}">${ic}</span><div class="tx">${i + 1}. ${esc(t)}${it?.obs ? `<div class="obs">${esc(it.obs)}</div>` : ""}${!it ? `<div class="sub" style="font-size:12.5px">Sin respuesta</div>` : ""}</div>${imgFoto(it?.foto, "", k + " · " + t)}</div>`; }).join("");
     return `<div class="det-sec"><h4><span>${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${inf.txt}</span></h4>
-      <div class="sub" style="font-size:13.5px">${p ? `Responsable: <b style="color:var(--fg)">${esc(p.completadoPor)}</b> · Hora: <b style="color:var(--fg)">${esc(p.horaRegistro)}</b>` : "Esta parte no se envió."}</div>${p ? rows : ""}</div>`;
+      <div class="sub" style="font-size:13.5px">${p ? `Responsable: <b style="color:var(--fg)">${esc(p.completadoPor)}</b> · Hora: <b style="color:var(--fg)">${esc(p.horaRegistro)}</b>` : "Esta parte no se envió."}</div>
+      ${p ? `<div class="li-actions" style="align-items:center;margin:4px 0">${cambiosParte(r, S)}${bloqueCorreccion(r, S)}</div>` : ""}${p ? rows : ""}</div>`;
   }).join("");
   const p = cumplimiento(r.items);
   abrir(`Sala ${r.sala} · ${fmtFecha(r.fecha)} · ${r.turno}`,
     `<div class="kv"><div><span class="lbl">Administrador</span>${esc(r.administrador || "—")}</div><div><span class="lbl">Cumplimiento</span><b class="pct">${pctTxt(p)}</b></div><div><span class="lbl">Área</span>Sala de ordeña</div></div>${secs}
      <p class="sub" style="font-size:12.5px">✓ Cumple · ✕ No cumple · N/A no aplica. Toca una foto para verla grande.</p>`);
   hidratarFotos($("dlg-b"));
+  $("dlg-b").onclick = e => { const b = e.target.closest("[data-desb]"); if (b) dlgDesbloquear(r, b.dataset.desb); };
 }
 
 /* ================= HALLAZGOS ================= */
