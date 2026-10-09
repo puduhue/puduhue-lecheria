@@ -145,6 +145,8 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 .syncbar.err .dot{background:var(--bad)}
 .center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
 .center img{width:88px;height:88px}
+.tema-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:36px;height:36px;padding:0;font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
 input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;line-height:1.3;text-align:left;background:var(--surface)}
 input::-webkit-date-and-time-value{text-align:left;margin:0}
 .hr-row{display:flex;gap:8px;align-items:stretch;min-width:0}
@@ -160,13 +162,14 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 
 </style>
 <script src="config.js"></script>
+<script>try{var t=localStorage.getItem("lec.tema");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
 </head>
 <body>
 <header class="top">
   <div class="top-in" style="padding-bottom:0">
     <div class="brand">
       <div class="brand-id"><img src="logo.png" alt=""><div><span class="org">PUDUHUE</span><h1>Check List Ordeña</h1></div></div>
-      <div class="salahdr"><span class="chip ok" id="sala-chip" hidden></span><span class="mono" id="ver"></span></div>
+      <div class="salahdr"><span class="chip ok" id="sala-chip" hidden></span><span class="mono" id="ver"></span><button class="tema-btn" type="button" data-tema></button></div>
     </div>
     <div class="syncbar off" id="sync"><span class="dot"></span><span id="sync-txt">Iniciando…</span><button class="btn small" id="sync-now" type="button" hidden>Subir ahora</button></div>
   </div>
@@ -225,7 +228,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 
 <script>
 (() => {
-const VERSION = "6";
+const VERSION = "7";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -694,6 +697,16 @@ if (!DEMO && "serviceWorker" in navigator && location.protocol === "https:"){
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", async () => { if (reloading) return; reloading = true; await persistDraft(); location.reload(); });
 }
+})();
+
+/* ---------- modo claro / oscuro ---------- */
+(() => {
+  const btns = document.querySelectorAll("[data-tema]");
+  const actual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const pintar = () => btns.forEach(b => { const d = actual() === "dark"; b.textContent = d ? "☀️" : "🌙"; b.title = d ? "Cambiar a modo claro" : "Cambiar a modo oscuro"; b.setAttribute("aria-label", b.title); });
+  btns.forEach(b => b.onclick = () => { const n = actual() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("lec.tema", n); } catch {} pintar(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", pintar);
+  pintar();
 })();
 </script>
 </body>
