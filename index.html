@@ -155,6 +155,13 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 .fijo{min-height:44px;display:flex;align-items:center;padding:9px 10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-weight:600}
 .card,.field,.grid2>*{min-width:0}
 .seg.partes{margin:0;grid-template-columns:1fr 1fr}
+#f-turno button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px}
+#f-turno .pt{font:700 18px var(--f-display);letter-spacing:.04em}
+#f-turno button[aria-pressed="true"] .chip{background:var(--surface)}
+.quien{font:600 12px var(--f-body);opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.ro .ro-res{margin-left:38px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.item.ro .ro-obs{font-size:14px;color:var(--bad);background:var(--bad-soft);padding:6px 10px;border-radius:6px}
+input:disabled,button:disabled{opacity:.6}
 .seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
 .seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
 .seg.partes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -228,7 +235,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 
 <script>
 (() => {
-const VERSION = "7";
+const VERSION = "8";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -317,15 +324,22 @@ async function demoApi(p, params, opts){
   await new Promise(r => setTimeout(r, 250));
   const m = (opts.method || "GET").toUpperCase();
   if (p === "/api/sala") return {sala: s, hoy: todayStr()};
-  if (p === "/api/registro" && m === "GET") return {registro: (await idb.get("kv", `reg_${s.id}_${params.fecha}_${params.turno}`)) || null};
+  if (p === "/api/registro" && m === "GET"){
+    const r = await idb.get("kv", `reg_${s.id}_${params.fecha}_${params.turno}`); if (!r) return {registro: null};
+    const partes = {}; for (const [S, x] of Object.entries(r.partes || {})) partes[S] = {...x, esTuyo: x.dispositivo === params.dispositivo};
+    return {registro: {...r, partes}};
+  }
   if (p === "/api/foto" && m === "POST"){ await idb.put("kv", "foto_" + params.id, opts.body); return {ok: true, ruta: "demo/" + params.id}; }
   if (p === "/api/registro" && m === "POST"){
     const d = JSON.parse(opts.body), key = `reg_${s.id}_${d.fecha}_${d.turno}`, prev = await idb.get("kv", key);
+    const pp = prev?.partes?.[d.parte];
+    if (pp && pp.dispositivo !== d.dispositivo){ const e = new Error("Esta parte ya la envió otra persona desde otro teléfono."); e.code = "bloqueado"; throw e; }
+    if (pp && d.fecha !== todayStr()){ const e = new Error("Este check list es de un día anterior y ya está cerrado."); e.code = "cerrado"; throw e; }
     const items = {};
     for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== d.parte) items[k] = it;
     for (const [k, it] of Object.entries(d.items)) if (k[0] === d.parte) items[k] = it;
     const ahora = new Date().toISOString();
-    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: d.horaRegistro, actualizadoEn: ahora}};
+    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: d.horaRegistro, actualizadoEn: ahora, dispositivo: d.dispositivo}};
     const doc = {id: `${s.id}_${d.fecha}_${d.turno}`, salaId: s.id, sala: s.nombre, predio: "", fecha: d.fecha, turno: d.turno,
       area: d.area || prev?.area || "", administrador: d.administrador || prev?.administrador || "", responsable: d.responsable || prev?.responsable || "",
       partes, items, seguimiento: prev?.seguimiento || {}, creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora};
@@ -337,7 +351,7 @@ async function demoApi(p, params, opts){
 }
 
 /* ---------- estado del formulario ---------- */
-let draft = null, saving = false, remoto = null;
+let draft = null, saving = false, remoto = null, remotos = {AM: null, PM: null};
 const slotKey = (f, t) => `${f}_${t}`;
 const secKeys = S => ALL_KEYS.filter(k => k[0] === S);
 const PARTE_LBL = {A: "Antes de ordeñar", B: "Después de ordeñar"};
@@ -348,6 +362,16 @@ function emptyDraft(fecha, turno){
   return { fecha, turno, parte: null, area: AREA, administrador: ls.get("lec.admin") || "", responsable: "",
     partes: {A: {completadoPor: q, horaRegistro: ""}, B: {completadoPor: q, horaRegistro: ""}}, items: {}, mod: {A: false, B: false}, est: {A: null, B: null} };
 }
+/* Una parte enviada solo se puede modificar desde el mismo teléfono y el mismo día.
+   Desde otro teléfono, o en días anteriores, se ve en modo lectura. */
+function bloqueo(S){
+  const p = remoto?.partes?.[S];
+  if (!p || p.desbloqueada) return null;
+  if (!p.esTuyo) return {tipo: "otro", p};
+  if (draft.fecha !== todayStr()) return {tipo: "cerrado", p};
+  return null;
+}
+const ro = () => !!bloqueo(draft.parte);
 function parteInfo(S){
   const tot = secKeys(S).length, n = secKeys(S).filter(k => draft.items[k]?.estado).length;
   if (draft.mod[S]) return {txt: `${n}/${tot} · sin guardar`, cls: "warn"};
@@ -364,7 +388,9 @@ async function patchDraft(fecha, turno, fn){
 }
 function mergeRemoto(r){
   for (const S of ["A", "B"]){
-    if (draft.mod[S] || draft.est[S] === "pendiente") continue;
+    const forzar = !!bloqueo(S);
+    if (forzar){ draft.mod[S] = false; if (draft.est[S] === "pendiente") draft.est[S] = "enviado"; }
+    else if (draft.mod[S] || draft.est[S] === "pendiente") continue;
     if (!secKeys(S).some(k => r.items?.[k])) continue;
     secKeys(S).forEach(k => { const it = r.items[k]; if (it) draft.items[k] = {estado: it.estado, obs: it.obs || "", foto: it.foto || undefined}; else delete draft.items[k]; });
     const pm = r.partes?.[S] || (!r.partes && r.completadoPor ? r : null);
@@ -379,15 +405,14 @@ async function loadSlot(fecha, turno, parte){
   draft.partes = draft.partes || {A: {completadoPor: "", horaRegistro: ""}, B: {completadoPor: "", horaRegistro: ""}};
   for (const S of ["A", "B"]) if (await idb.get("outbox", `${slotKey(fecha, turno)}_${S}`)) draft.est[S] = "pendiente";
   draft.parte = parte || sugerirParte();
-  remoto = null; renderForm();
+  remotos = {AM: null, PM: null}; remoto = null; renderForm();
   if (navigator.onLine && API !== null){
     try {
-      const j = await api("/api/registro", {fecha, turno});
-      if (j.registro && draft.fecha === fecha && draft.turno === turno){
-        remoto = j.registro; mergeRemoto(j.registro);
-        if (!parte && !draft.mod.A && !draft.mod.B) draft.parte = sugerirParte();
-        await persistDraft(); renderForm();
-      }
+      const [am, pm] = await Promise.all(["AM", "PM"].map(t => api("/api/registro", {fecha, turno: t, dispositivo})));
+      if (draft.fecha !== fecha || draft.turno !== turno) return;
+      remotos = {AM: am.registro, PM: pm.registro}; remoto = remotos[turno];
+      if (remoto){ mergeRemoto(remoto); if (!parte && !draft.mod.A && !draft.mod.B) draft.parte = sugerirParte(); await persistDraft(); }
+      renderForm();
     } catch {}
   }
 }
@@ -414,6 +439,9 @@ function itemHtml(k){
   const it = draft.items[k] || {};
   const st = it.estado || "", nc = st === "NC", conFoto = st === "C" || st === "NC";
   const tiene = it.fotoLocal || it.foto;
+  if (ro()) return `<div class="item ro" data-k="${k}" data-state="${st}">
+    <div class="item-head"><span class="n">${k.slice(1)}</span><p>${esc(itemText(k))}</p></div>
+    <div class="ro-res"><span class="chip ${st === "C" ? "ok" : st === "NC" ? "bad" : st === "NA" ? "na" : "na"}">${st ? ESTADO_LBL[st] : "Sin respuesta"}</span>${it.obs ? `<span class="ro-obs">${esc(it.obs)}</span>` : ""}${tiene ? thumbHtml(it) : ""}</div></div>`;
   return `<div class="item" data-k="${k}" data-state="${st}">
     <div class="item-head"><span class="n">${k.slice(1)}</span><p>${esc(itemText(k))}</p></div>
     <div class="seg">${["C","NC","NA"].map(v => `<button type="button" data-v="${v}" aria-pressed="${st===v}">${ESTADO_LBL[v]}</button>`).join("")}</div>
@@ -428,15 +456,39 @@ function itemHtml(k){
       </div>
     </div></div>`;
 }
+function turnoInfo(t){
+  const r = remotos[t];
+  if (t === draft.turno){
+    const env = ["A", "B"].filter(S => draft.est[S] === "enviado" || draft.est[S] === "pendiente");
+    const quien = [...new Set(env.map(S => draft.partes[S]?.completadoPor).filter(Boolean))];
+    const completo = env.length === 2 && ALL_KEYS.every(k => draft.items[k]?.estado);
+    return {n: env.length, completo, quien};
+  }
+  const env = r ? ["A", "B"].filter(S => r.partes?.[S]) : [];
+  return {n: env.length, completo: env.length === 2 && ALL_KEYS.every(k => r.items?.[k]), quien: [...new Set(env.map(S => r.partes[S].completadoPor).filter(Boolean))]};
+}
+function renderTurnos(){
+  document.querySelectorAll("#f-turno button").forEach(b => {
+    const t = b.dataset.v, i = turnoInfo(t);
+    const chip = i.completo ? `<span class="chip ok">Listo</span>` : i.n ? `<span class="chip warn">${i.n} de 2 partes</span>` : `<span class="chip na">Pendiente</span>`;
+    b.setAttribute("aria-pressed", t === draft.turno);
+    b.innerHTML = `<span class="pt">${t}</span>${chip}${i.quien.length ? `<span class="quien">${esc(i.quien.join(" · "))}</span>` : ""}`;
+  });
+}
 function renderPartes(){
+  renderTurnos();
   document.querySelectorAll("#f-parte button").forEach(b => {
-    const S = b.dataset.v, inf = parteInfo(S);
+    const S = b.dataset.v, inf = parteInfo(S), p = draft.partes[S], bl = bloqueo(S);
+    const enviada = draft.est[S] === "enviado" || draft.est[S] === "pendiente";
     b.setAttribute("aria-pressed", S === draft.parte);
-    b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${inf.txt}</span>`;
+    b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${bl ? "🔒 " : ""}${inf.txt}</span>${enviada && p?.completadoPor ? `<span class="quien">${esc(p.completadoPor)}${p.horaRegistro ? " · " + esc(p.horaRegistro) : ""}</span>` : ""}`;
   });
   $("f-quien-lbl").textContent = `Responsable de «${PARTE_LBL[draft.parte]}» (quien completa) *`;
   $("f-hr-lbl").textContent = `Hora de llenado *`;
   $("f-save").textContent = draft.parte === "A" ? "Guardar · Antes" : "Guardar · Después";
+  const bloq = ro();
+  ["f-quien", "f-hr", "f-now", "f-admin"].forEach(id => $(id).disabled = bloq);
+  $("f-save").hidden = bloq;
 }
 function renderForm(){
   $("v-form").hidden = false; $("savebar").hidden = false;
@@ -446,8 +498,13 @@ function renderForm(){
   $("f-quien").value = P.completadoPor || ""; $("f-hr").value = P.horaRegistro || "";
   $("f-admin").value = draft.administrador || "";
   renderPartes();
-  const ex = $("f-existing"), est = draft.est[draft.parte];
-  if (draft.mod[draft.parte] && est) { ex.hidden = false; ex.textContent = `Estás modificando «${PARTE_LBL[draft.parte]}». Al guardar, reemplaza lo ${est === "pendiente" ? "guardado" : DEMO ? "guardado" : "enviado"} antes.`; }
+  const ex = $("f-existing"), est = draft.est[draft.parte], bl = bloqueo(draft.parte);
+  ex.className = "notice " + (bl ? "warn" : "info");
+  if (bl?.tipo === "otro"){ ex.hidden = false; ex.innerHTML = `🔒 <b>Solo lectura.</b> «${PARTE_LBL[draft.parte]}» del turno ${draft.turno} la envió <b>${esc(bl.p.completadoPor || "otra persona")}</b>${bl.p.horaRegistro ? " a las " + esc(bl.p.horaRegistro) : ""} desde otro teléfono. Puedes ver sus respuestas, pero solo esa persona puede modificarlas.`; }
+  else if (bl?.tipo === "cerrado"){ ex.hidden = false; ex.innerHTML = `🔒 <b>Solo lectura.</b> Este check list es de un día anterior y ya está cerrado. Si hay que corregir algo, pídelo a la administración.`; }
+  else if (est === "enviado" && remoto?.partes?.[draft.parte]?.desbloqueada && !draft.mod[draft.parte]){ ex.hidden = false; ex.textContent = `La administración habilitó la corrección de «${PARTE_LBL[draft.parte]}». Puedes modificarla y guardar.`; }
+  else if (est === "enviado" && !draft.mod[draft.parte] && draft.fecha === todayStr()){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» ya fue ${DEMO ? "guardada" : "enviada"} desde este teléfono. Puedes corregirla hasta el final del día; al guardar, reemplaza lo anterior.`; }
+  else if (draft.mod[draft.parte] && est) { ex.hidden = false; ex.textContent = `Estás modificando «${PARTE_LBL[draft.parte]}». Al guardar, reemplaza lo ${est === "pendiente" ? "guardado" : DEMO ? "guardado" : "enviado"} antes.`; }
   else if (est === "pendiente"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» está guardada en este teléfono y se enviará cuando haya señal.`; }
   else if (est === "enviado"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» ya fue ${DEMO ? "guardada" : "enviada"}. Si cambias algo y guardas, reemplaza lo anterior.`; }
   else ex.hidden = true;
@@ -475,6 +532,7 @@ function problems(){
 }
 function updateSaveMsg(){
   const S = draft.parte, n = secKeys(S).filter(k => draft.items[k]?.estado).length, p = problems(), msg = $("save-msg");
+  if (ro()){ msg.innerHTML = `🔒 Solo lectura · ${esc(PARTE_LBL[S])}: ${n}/${secKeys(S).length} ítems`; $("f-save").disabled = true; renderPartes(); return; }
   if (p.length) msg.innerHTML = `<span class="req">${p.length} ítem(s) sin foto${p.some(k => draft.items[k].estado === "NC") ? " u observación" : ""}: ${p.join(", ")}</span>`;
   else msg.textContent = `${PARTE_LBL[S]}: ${n}/${secKeys(S).length} ítems${draft.mod[S] ? " · cambios sin guardar" : ""}`;
   $("f-save").disabled = saving;
@@ -484,7 +542,7 @@ function markDirty(){ draft.mod[draft.parte] = true; updateSaveMsg(); persistDra
 
 /* ---------- eventos del formulario ---------- */
 $("f-sections").addEventListener("click", e => {
-  const b = e.target.closest(".seg button"); if (!b) return;
+  const b = e.target.closest(".seg button"); if (!b || ro()) return;
   const k = b.closest(".item").dataset.k;
   const it = draft.items[k] = draft.items[k] || {};
   it.estado = it.estado === b.dataset.v ? undefined : b.dataset.v;
@@ -492,12 +550,12 @@ $("f-sections").addEventListener("click", e => {
   markDirty(); rerenderItem(k);
 });
 $("f-sections").addEventListener("input", e => {
-  const k = e.target.dataset.obs; if (!k) return;
+  const k = e.target.dataset.obs; if (!k || ro()) return;
   draft.items[k].obs = e.target.value; markDirty();
   const rq = document.querySelector(`[data-reqobs="${k}"]`); if (rq) rq.hidden = !!e.target.value.trim();
 });
 $("f-sections").addEventListener("change", async e => {
-  const k = e.target.dataset.foto; if (!k || !e.target.files[0]) return;
+  const k = e.target.dataset.foto; if (!k || !e.target.files[0] || ro()) return;
   const file = e.target.files[0];
   const lbl = e.target.closest("label").querySelector("span"); lbl.textContent = "Procesando…";
   if (!(await fotoReciente(file))){ toast(`Usa una foto tomada en este momento (máximo ${MAX_EDAD_MIN} minutos). No se aceptan fotos de la galería.`, 5000); rerenderItem(k); return; }
@@ -523,9 +581,9 @@ $("f-fecha").addEventListener("change", async e => {
   const v = e.target.value; if (!v){ e.target.value = draft.fecha; return; }
   await persistDraft(); await loadSlot(v, draft.turno);
 });
-$("f-quien").addEventListener("input", e => { draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
-$("f-hr").addEventListener("input", e => { draft.partes[draft.parte].horaRegistro = e.target.value; markDirty(); });
-$("f-admin").addEventListener("input", e => { draft.administrador = e.target.value; markDirty(); });
+$("f-quien").addEventListener("input", e => { if (ro()) return; draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
+$("f-hr").addEventListener("input", e => { if (ro()) return; draft.partes[draft.parte].horaRegistro = e.target.value; markDirty(); });
+$("f-admin").addEventListener("input", e => { if (ro()) return; draft.administrador = e.target.value; markDirty(); });
 $("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.partes[draft.parte].horaRegistro = $("f-hr").value; markDirty(); };
 
 /* ---------- fotos ---------- */
@@ -582,7 +640,7 @@ async function compress(file, marca){
 
 /* ---------- guardar y cola de envío ---------- */
 $("f-save").onclick = async () => {
-  if (saving) return;
+  if (saving || ro()) return;
   const S = draft.parte, P = draft.partes[S];
   const p = problems();
   if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
@@ -606,7 +664,7 @@ $("f-save").onclick = async () => {
     if (!ok) toast("Guardado en este teléfono. Se enviará solo cuando vuelva la señal.", 4500);
     else if (S === "A" && completa) toast(`«Antes de ordeñar» ${verbo}. Al terminar la ordeña, completa «Después de ordeñar».`, 5000);
     else if (S === "B" && completa) toast(`«Después de ordeñar» ${verbo}.${secKeys("A").every(k => draft.items[k]?.estado) ? " Turno completo." : " Falta completar «Antes de ordeñar»."}`, 5000);
-    else toast(`Avance ${verbo}. Puedes completarlo más tarde.`);
+    else toast(`Avance ${DEMO ? "guardado" : "enviado"}. Puedes completarlo más tarde.`);
     renderForm();
   } catch { toast("No se pudo guardar. Intenta de nuevo."); }
   finally { saving = false; updateSaveMsg(); }
@@ -632,9 +690,18 @@ async function trySync(){
       }
       const items = {};
       for (const [k, it] of Object.entries(job.items)) if (it.estado) items[k] = {estado: it.estado, obs: it.obs || "", ...(it.foto ? {foto: it.foto} : {})};
-      await api("/api/registro", {}, {method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({fecha: job.fecha, turno: job.turno, parte: job.parte, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
-          administrador: job.administrador, responsable: job.responsable, items, dispositivo})});
+      try {
+        await api("/api/registro", {}, {method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({fecha: job.fecha, turno: job.turno, parte: job.parte, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
+            administrador: job.administrador, responsable: job.responsable, items, dispositivo})});
+      } catch (e) {
+        if (e.code !== "bloqueado" && e.code !== "cerrado") throw e;
+        await idb.del("outbox", key);
+        await patchDraft(job.fecha, job.turno, d => { d.est[job.parte] = null; d.mod[job.parte] = false; });
+        showMsg(`No se pudo enviar «${PARTE_LBL[job.parte]}» del ${fmtFecha(job.fecha)} ${job.turno}: ${e.message}`);
+        if (draft && draft.fecha === job.fecha && draft.turno === job.turno) setTimeout(() => loadSlot(job.fecha, job.turno, job.parte), 50);
+        continue;
+      }
       await idb.del("outbox", key);
       if (await patchDraft(job.fecha, job.turno, d => { if (d.est[job.parte] === "pendiente") d.est[job.parte] = "enviado"; })) tocaActual = true;
     }
