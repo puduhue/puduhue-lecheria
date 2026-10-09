@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel de Ordeña · Puduhue</title>
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#F3F5F6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+
+/* Layout: sticky header + tab bar; single column app at phone width, two columns for summary on desktop. Stainless-steel neutrals, cold-chain blue accent. */
+:root{
+  --bg:#F3F5F6; --surface:#FFFFFF; --surface-2:#E8ECEE; --line:#D3DADE;
+  --fg:#17232B; --muted:#5A6A74; --accent:#2C4FA0; --accent-fg:#FFFFFF; --accent-soft:#DFE6F5; --brown:#5C3815; --green:#268A38;
+  --ok:#1E7A46; --ok-soft:#DDF1E4; --bad:#B3261E; --bad-soft:#F9E0DE; --na:#6B7780; --na-soft:#E6EAEC;
+  --warn:#9A6200; --warn-soft:#FBEED5;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:600}
+.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:24px;font-weight:700}
+.brand-id{display:flex;align-items:center;gap:10px}
+.brand-id img{width:44px;height:44px;border-radius:50%;background:#fff;padding:2px;flex:0 0 auto}
+.brand-id .org{font:700 12px var(--f-display);letter-spacing:.18em;color:var(--brown);display:block;line-height:1}
+.brand .code{color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:600 15px var(--f-display);letter-spacing:.03em;padding:8px 12px 10px;border-bottom:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--bad);color:var(--surface);font:600 11px/18px var(--f-body);text-align:center}
+section.view{padding-top:18px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 160px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 14px var(--f-body);border-radius:8px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.notice{border-radius:8px;padding:10px 12px;font-size:14px}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.info{background:var(--accent-soft);color:var(--fg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font:700 28px var(--f-display);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.na{background:var(--na-soft);color:var(--na)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.table-wrap{overflow-x:auto}
+table.status{width:100%;border-collapse:collapse;font-size:14px}
+table.status th,table.status td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.status th{font-weight:600}
+.slot{border:0;background:none;padding:0;cursor:pointer;font:inherit}
+.empty{color:var(--muted);text-align:center;padding:24px 12px}
+/* checklist form */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:8px;border-bottom:2px solid var(--fg)}
+.sec-head .code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:8px}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .2s}
+.item{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item-head{display:flex;gap:10px;align-items:flex-start}
+.item-head .n{flex:0 0 28px;height:28px;border-radius:6px;background:var(--surface-2);font:600 13px var(--f-mono);display:flex;align-items:center;justify-content:center}
+.item-head p{margin:3px 0 0;min-width:0}
+.item[data-state="C"] .item-head .n{background:var(--ok-soft);color:var(--ok)}
+.item[data-state="NC"] .item-head .n{background:var(--bad-soft);color:var(--bad)}
+.item[data-state="NA"] .item-head .n{background:var(--na-soft);color:var(--na)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-left:38px}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:10px 4px;font:600 14px var(--f-body);cursor:pointer}
+.seg button[data-v="C"][aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.seg button[data-v="NC"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+#f-turno button{font:700 17px var(--f-display);letter-spacing:.04em;padding:12px 4px}
+#f-turno button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg button[data-v="NA"][aria-pressed="true"]{background:var(--na);border-color:var(--na);color:var(--surface)}
+.extra{margin-left:38px;display:flex;flex-direction:column;gap:8px}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.thumb{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--surface-2)}
+.req{color:var(--bad);font-size:12.5px;font-weight:600}
+.important{border-left:4px solid var(--warn);background:var(--warn-soft);color:var(--fg);border-radius:0 8px 8px 0;padding:12px 14px;font-size:14px}
+.important ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.savebar-in{max-width:980px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.savebar .msg{font-size:13.5px;color:var(--muted);min-width:0;flex:1 1 200px}
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.li:last-child{border-bottom:0}
+.li .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.li .meta{font-size:13px;color:var(--muted)}
+.li-actions{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;max-width:calc(100% - 32px)}
+dialog{border:0;border-radius:12px;padding:0;width:min(760px,calc(100% - 24px));max-height:90vh;background:var(--surface);color:var(--fg)}
+dialog::backdrop{background:rgba(10,20,28,.55)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.dlg-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px}
+.kv div{display:flex;flex-direction:column}
+.detail-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.detail-item .t{flex:1;min-width:0}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+.salahdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.salahdr .chip{font-size:13px}
+.syncbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 0 10px}
+.syncbar .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.syncbar.pend .dot{background:var(--warn)}
+.syncbar.off .dot{background:var(--na)}
+.syncbar.err .dot{background:var(--bad)}
+.center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.center img{width:88px;height:88px}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;line-height:1.3;text-align:left;background:var(--surface)}
+input::-webkit-date-and-time-value{text-align:left;margin:0}
+.hr-row{display:flex;gap:8px;align-items:stretch;min-width:0}
+.hr-row input{flex:1 1 auto;width:auto}
+.hr-row .btn{flex:0 0 auto}
+.fijo{min-height:44px;display:flex;align-items:center;padding:9px 10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-weight:600}
+.card,.field,.grid2>*{min-width:0}
+.seg.partes{margin:0;grid-template-columns:1fr 1fr}
+.seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
+.seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
+.seg.partes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg.partes button[aria-pressed="true"] .chip{background:var(--surface);}
+
+
+/* ---- entrada ---- */
+.login{min-height:calc(100vh - 40px);min-height:calc(100dvh - 40px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.login-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 24px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.login-card .logo{width:84px;height:84px;border-radius:50%;background:#fff;padding:3px}
+.login-card .org{font:700 13px var(--f-display);letter-spacing:.22em;color:var(--brown)}
+.login-card h1{font-size:28px;font-weight:700;line-height:1.1}
+.sub{color:var(--muted);margin:0;font-size:14.5px}
+.ms-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 15.5px var(--f-body);cursor:pointer}
+.ms-btn:hover{background:var(--surface-2)}
+.lock{display:flex;gap:10px;align-items:flex-start;text-align:left;background:var(--surface-2);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--muted);width:100%}
+.lock b{color:var(--fg)}
+.foot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;width:100%}
+.who{font-family:var(--f-mono);font-size:13px;background:var(--surface-2);padding:2px 6px;border-radius:6px;color:var(--fg);word-break:break-all}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--surface-2);border-top-color:var(--accent);animation:sp .9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stack{display:flex;flex-direction:column;gap:10px;width:100%}
+/* ---- app ---- */
+.userbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.userbox b{color:var(--fg)}
+.intro{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--fg)}
+.intro .ic{font-size:18px;line-height:1.2}
+.demo-note{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:13px;margin-top:14px}
+.datebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.datebar > input{width:auto;flex:0 1 180px}
+.datebar .lbl-day{font:700 18px var(--f-display)}
+.kpi small{color:var(--muted);font-size:12.5px}
+.kpi .bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.kpi .bar span{display:block;height:100%;background:var(--ok)}
+.legend{display:flex;gap:8px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.salas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:12px}
+.sala-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.sala-card .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sala-card h3{font-size:19px}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slot{border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:left;background:var(--surface);color:var(--fg);cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0;font:inherit}
+.slot .t{font:600 12px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.slot .s{font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+.slot .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot.ok{background:var(--ok-soft);border-color:transparent}.slot.ok .s{color:var(--ok)}
+.slot.warn{background:var(--warn-soft);border-color:transparent}.slot.warn .s{color:var(--warn)}
+.slot.bad{background:var(--bad-soft);border-color:transparent}.slot.bad .s{color:var(--bad)}
+.slot.na{background:var(--surface-2);border-color:transparent}.slot.na .s{color:var(--na)}
+.slot.na{cursor:default}
+.hall{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.hall:last-child{border-bottom:0}
+.hall .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.hall .what{font-weight:600}
+.hall .meta{font-size:13px;color:var(--muted)}
+.hall blockquote{margin:0;padding:6px 10px;border-left:3px solid var(--bad);background:var(--bad-soft);border-radius:0 6px 6px 0;font-size:14px}
+.hall .closed{padding:6px 10px;border-left:3px solid var(--ok);background:var(--ok-soft);border-radius:0 6px 6px 0;font-size:14px}
+.hall .thumb{width:76px;height:76px;flex:0 0 auto;cursor:zoom-in}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pills button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 14px;font:600 13.5px var(--f-body);cursor:pointer}
+.pills button[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.hist-row{display:grid;grid-template-columns:minmax(0,1.3fr) auto auto auto;gap:6px 10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.hist-row:last-child{border-bottom:0}
+.hist-row .m{font-size:13px;color:var(--muted)}
+@media (max-width:560px){.hist-row{grid-template-columns:1fr 1fr}.hist-row .hw{grid-column:1/-1}}
+.pct{font:700 15px var(--f-display);font-variant-numeric:tabular-nums}
+.det-sec{display:flex;flex-direction:column;gap:2px}
+.det-sec h4{margin:6px 0 4px;font:700 16px var(--f-display);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.det-it{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.det-it .ic{flex:0 0 26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.det-it .ic.C{background:var(--ok-soft);color:var(--ok)}.det-it .ic.NC{background:var(--bad-soft);color:var(--bad)}.det-it .ic.NA{background:var(--na-soft);color:var(--na)}.det-it .ic.X{background:var(--surface-2);color:var(--na)}
+.det-it .tx{flex:1;min-width:0;font-size:14px}
+.det-it .obs{font-size:13px;color:var(--bad);margin-top:2px}
+.det-it img{width:54px;height:54px;object-fit:cover;border-radius:6px;cursor:zoom-in}
+.rep-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.rep-table th,.rep-table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+.rep-table th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.qr-box{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.qr-box .qr{background:#fff;padding:12px;border-radius:10px;width:min(260px,80vw)}
+.qr-box .qr img,.qr-box .qr svg{width:100%;height:auto;display:block}
+.person{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.person:last-child{border-bottom:0}
+.person .av{width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 15px var(--f-display);flex:0 0 auto}
+.person .body{flex:1 1 200px;min-width:0}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:10px}
+.role{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;background:var(--surface)}
+.role b{display:block;font-family:var(--f-display);font-size:16px;margin-bottom:2px}
+.zoom img{width:100%;border-radius:8px}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:13.5px;cursor:pointer}
+.checks input{width:auto}
+@media print{body *{visibility:hidden}#print-area,#print-area *{visibility:visible}#print-area{position:absolute;left:0;top:0;width:100%}}
+#print-area{display:none}
+@media print{#print-area{display:block}.qr-page{page-break-after:always;text-align:center;padding-top:40px;font-family:Helvetica,Arial,sans-serif}.qr-page h1{font-size:40px;color:#2C4FA0;margin:10px 0}.qr-page img{width:320px}}
+
+.userbox .chip{white-space:normal}
+#tabs{flex-wrap:wrap;overflow:visible;row-gap:0}
+#tabs button{padding:8px 10px 9px}
+@media (max-width:420px){#tabs button{font-size:14px;padding:7px 8px 8px}}
+.rep-table .chip{padding:2px 8px}.rep-table .chip::before{display:none}
+.rep-table th,.rep-table td{padding:7px 4px}
+
+</style>
+<script src="../config.js"></script>
+<script src="msal-browser.min.js"></script>
+</head>
+<body>
+<!-- ================= ENTRADA ================= -->
+<main class="login" id="v-login">
+  <div class="login-card">
+    <img class="logo" src="../logo.png" alt="">
+    <div><span class="org">PUDUHUE</span><h1>Panel de Ordeña</h1></div>
+    <p class="sub">Seguimiento de los check lists de las salas de ordeña: estado del día, hallazgos, historial e informes.</p>
+    <div id="st-inicio" class="stack">
+      <button class="ms-btn" id="btn-login" type="button"><svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg><span>Iniciar sesión con Microsoft</span></button>
+      <div class="lock"><span aria-hidden="true">🔒</span><span><b>Acceso restringido.</b> Usa tu cuenta <b>@puduhue.cl</b>. Solo pueden entrar las personas autorizadas por Control de Gestión.</span></div>
+    </div>
+    <div id="st-demo" class="stack" hidden>
+      <p class="sub"><b>Vista previa:</b> el inicio de sesión es simulado. Elige con qué perfil entrar para ver qué ve cada uno.</p>
+      <button class="btn primary" type="button" data-demo="admin">Entrar como Administrador</button>
+      <button class="btn" type="button" data-demo="sup">Entrar como Supervisor</button>
+      <button class="btn" type="button" data-demo="enc">Entrar como Encargado de campo<br><small style="font-weight:400">(solo Radales y Ciruelillo)</small></button>
+      <button class="btn" type="button" data-demo="no">Simular cuenta sin acceso</button>
+      <button class="btn small" type="button" data-demo="volver" style="align-self:center">Volver</button>
+    </div>
+    <div id="st-cargando" class="stack" hidden style="align-items:center;padding:8px 0"><div class="spin"></div><span class="sub">Verificando acceso…</span></div>
+    <div id="st-denegado" class="stack" hidden>
+      <div class="notice bad" style="text-align:left"><b>No tienes acceso a este panel.</b><br>Iniciaste sesión como <span class="who" id="who-no"></span>, pero esa cuenta no está en la lista de personas autorizadas.</div>
+      <p class="sub">Si necesitas acceso, pídelo a Control de Gestión.</p>
+      <button class="btn" id="btn-otra" type="button">Usar otra cuenta</button>
+    </div>
+    <div class="foot">¿Eres ordeñador? Este panel no es para ti: escanea el <b>código QR de tu sala</b> para llenar el check list.</div>
+  </div>
+</main>
+
+<!-- ================= PANEL ================= -->
+<div id="v-app" hidden>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="brand-id"><img src="../logo.png" alt=""><div><span class="org">PUDUHUE</span><h1>Panel de Ordeña</h1></div></div>
+      <div class="userbox"><span>👤 <b id="u-nombre"></b></span><span class="chip na" id="u-rol"></span><button class="btn small" id="btn-act" type="button" title="Volver a cargar los datos">↻ Actualizar</button><button class="btn small" id="btn-salir" type="button">Salir</button></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button type="button" data-v="hoy" aria-selected="true">Hoy</button>
+      <button type="button" data-v="hall" aria-selected="false">Hallazgos <span class="badge" id="b-hall" hidden></span></button>
+      <button type="button" data-v="hist" aria-selected="false">Historial</button>
+      <button type="button" data-v="inf" aria-selected="false">Informes</button>
+      <button type="button" data-v="salas" aria-selected="false" data-admin>Salas y QR</button>
+      <button type="button" data-v="pers" aria-selected="false" data-admin>Personas</button>
+    </nav>
+  </div>
+</header>
+<div class="wrap">
+  <div class="notice info" id="cargando" hidden style="margin-top:14px">Cargando datos…</div>
+  <div class="demo-note" id="demo-note" hidden><b>Vista previa con datos de ejemplo.</b> Los registros, nombres y fotos son inventados para mostrar cómo funciona el panel. Lo que cambies aquí queda solo en este navegador.</div>
+
+  <!-- HOY -->
+  <section class="view" id="v-hoy">
+    <div class="intro"><span class="ic">📋</span><span>Cada sala hace <b>4 controles al día</b>: antes y después de la ordeña, en la mañana (AM) y en la tarde (PM). Aquí ves cuáles se hicieron. Toca un control para ver el detalle.</span></div>
+    <div class="datebar">
+      <button class="btn small" type="button" id="hoy-prev" aria-label="Día anterior">‹</button>
+      <input type="date" id="hoy-fecha">
+      <button class="btn small" type="button" id="hoy-next" aria-label="Día siguiente">›</button>
+      <span class="lbl-day" id="hoy-lbl"></span>
+    </div>
+    <div class="kpis" id="hoy-kpis"></div>
+    <div class="legend"><b>Colores:</b>
+      <span class="chip ok">Completo</span><span class="chip warn">Incompleto</span><span class="chip bad">No se hizo</span><span class="chip na">Pendiente (hoy)</span></div>
+    <div class="salas-grid" id="hoy-salas"></div>
+  </section>
+
+  <!-- HALLAZGOS -->
+  <section class="view" id="v-hall" hidden>
+    <div class="intro"><span class="ic">⚠️</span><span>Un <b>hallazgo</b> es un ítem marcado como <b>"No cumple"</b> en un check list. Queda <b>abierto</b> hasta que alguien registre qué se hizo para solucionarlo. Los más antiguos aparecen primero.</span></div>
+    <div class="filters">
+      <div class="pills" id="h-estado"><button type="button" data-v="abierto" aria-pressed="true">Abiertos</button><button type="button" data-v="cerrado" aria-pressed="false">Cerrados</button><button type="button" data-v="todos" aria-pressed="false">Todos</button></div>
+      <label class="field" style="flex:0 1 220px"><span class="lbl">Sala</span><select id="h-sala"></select></label>
+    </div>
+    <div class="card"><div id="h-list"></div></div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="view" id="v-hist" hidden>
+    <div class="intro"><span class="ic">🗂️</span><span>Todos los check lists enviados. Usa los filtros para buscar por sala o por fechas, y toca una fila para ver el detalle con fotos.</span></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="filters">
+        <label class="field"><span class="lbl">Sala</span><select id="r-sala"></select></label>
+        <label class="field"><span class="lbl">Desde</span><input type="date" id="r-desde"></label>
+        <label class="field"><span class="lbl">Hasta</span><input type="date" id="r-hasta"></label>
+        <label class="field" style="flex:0 1 120px"><span class="lbl">Turno</span><select id="r-turno"><option value="">Ambos</option><option>AM</option><option>PM</option></select></label>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:center"><span class="sub" id="r-count"></span><button class="btn small" id="r-xlsx" type="button">⬇ Descargar Excel</button></div>
+    </div>
+    <div class="card"><div id="r-list"></div></div>
+  </section>
+
+  <!-- INFORMES -->
+  <section class="view" id="v-inf" hidden>
+    <div class="intro"><span class="ic">📄</span><span>El <b>informe del día</b> junta los check lists de todas las salas: qué se hizo, el porcentaje de cumplimiento y los hallazgos con sus fotos. Elige la fecha y descárgalo en PDF o Excel.</span></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="datebar"><label class="field" style="flex:0 1 200px"><span class="lbl">Fecha del informe</span><input type="date" id="i-fecha"></label></div>
+      <div class="li-actions"><button class="btn primary" id="i-pdf" type="button">⬇ Descargar PDF</button><button class="btn" id="i-xlsx" type="button">⬇ Descargar Excel</button></div>
+    </div>
+    <div class="card" id="i-prev"></div>
+  </section>
+
+  <!-- SALAS -->
+  <section class="view" id="v-salas" hidden>
+    <div class="intro"><span class="ic">🔑</span><span>Cada sala tiene un <b>código QR propio</b>. Si un QR se pierde o lo copió alguien que no debe, usa <b>"Reemplazar QR"</b>: el anterior deja de funcionar y hay que imprimir el nuevo.</span></div>
+    <div class="row" style="justify-content:space-between;align-items:center"><span class="sub" id="s-count"></span><button class="btn" id="s-print-all" type="button">🖨 Imprimir todos los QR</button></div>
+    <div class="card"><div id="s-list"></div></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <h3>Agregar sala de ordeña</h3>
+      <div class="row"><label class="field"><span class="lbl">Nombre de la sala</span><input id="s-nombre" placeholder="Ej.: Los Robles"></label><button class="btn primary" id="s-add" type="button">Agregar</button></div>
+    </div>
+  </section>
+
+  <!-- PERSONAS -->
+  <section class="view" id="v-pers" hidden>
+    <div class="intro"><span class="ic">👥</span><span>Solo las personas de esta lista pueden entrar al panel, siempre con su cuenta <b>@puduhue.cl</b>. Si quitas a alguien, pierde el acceso de inmediato.</span></div>
+    <div class="roles">
+      <div class="role"><b>Administrador</b>Ve todo. Gestiona salas, códigos QR y personas.</div>
+      <div class="role"><b>Supervisor</b>Ve todas las salas, informes e historial. Cierra hallazgos.</div>
+      <div class="role"><b>Encargado de campo</b>Igual que supervisor, pero solo de las salas que se le asignen.</div>
+    </div>
+    <div class="row" style="justify-content:flex-end"><button class="btn primary" id="p-add" type="button">+ Agregar persona</button></div>
+    <div class="card"><div id="p-list"></div></div>
+  </section>
+</div>
+</div>
+
+<dialog id="dlg"><div class="dlg-head"><h3 id="dlg-t"></h3><button class="btn small" type="button" id="dlg-x">Cerrar</button></div><div class="dlg-body" id="dlg-b"></div></dialog>
+<div class="toast" id="toast" hidden></div>
+<div id="print-area"></div>
+
+<script>
+(() => {
+const DEMO = !!(window.LEC_CONFIG && window.LEC_CONFIG.DEMO);
+const APP_URL = "https://puduhue.github.io/puduhue-lecheria/";
+const API = (window.LEC_CONFIG && window.LEC_CONFIG.API_URL) || "";
+const MS = {clientId: "7dbe6da2-d0de-49f1-a4a5-76fe822ce9d0", authority: "https://login.microsoftonline.com/8812d491-c151-4cf4-ad03-7671f57a4a23"};
+const SECCIONES = [
+  {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
+    "Contar con ropa de trabajo limpia y EPP respectivo.",
+    "Verificar el suministro de agua de procesos (nivel de estanques y/o funcionamiento de bombas) y bebederos.",
+    "Verificar el suministro de energía en indicadores (220 V en cada fase o 380 V, según corresponda).",
+    "Asegurar el correcto funcionamiento del equipo electrógeno (automático), de ser necesario.",
+    "Verificar el correcto aseo del o los estanques de leche fresca, según corresponda.",
+    "Poner en marcha el sistema de frío de estanques y verificar la correcta conexión de mangueras y/o válvulas.",
+    "Instalar los filtros de partículas respectivos para leche fresca.",
+    "Verificar válvula (abrir flujo) del pre-enfriador de placas para leche fresca.",
+    "Chequear temperatura del agua caliente.",
+    "Inspección visual de motores y bombas de vacío.",
+    "Inspección visual de la dosificación de alimento por puesto y del sistema de alimentación en general.",
+    "Verificar existencia suficiente de dipping."]},
+  {k:"B", t:"B. Control posterior a la ordeña", items:[
+    "Verificar correcto suministro eléctrico.",
+    "Verificar correcto suministro de agua en instalación y potreros (estanques y bombas funcionando).",
+    "Chequear temperatura del agua caliente.",
+    "Verificar existencia suficiente de químicos y detergente para equipo y estanques de leche.",
+    "Verificar tendencia de frío (temperatura de la leche en estanque).",
+    "Tomar la muestra de antibiótico respectiva.",
+    "Dejar instalaciones ordenadas.",
+    "Aseo general de sala y patio de espera."]}
+];
+const ALL_KEYS = SECCIONES.flatMap(s => s.items.map((_, i) => s.k + (i + 1)));
+const secKeys = S => ALL_KEYS.filter(k => k[0] === S);
+const itemText = k => SECCIONES.find(s => s.k === k[0]).items[+k.slice(1) - 1];
+const PARTE_LBL = {A: "Antes de ordeñar", B: "Después de ordeñar"};
+const PARTE_CORTO = {A: "Antes", B: "Después"};
+const ROL_LBL = {admin: "Administrador", sup: "Supervisor", enc: "Encargado de campo"};
+const SLOTS = [["AM","A"],["AM","B"],["PM","A"],["PM","B"]];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const parseF = f => { const [y, m, d] = f.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (f, n) => { const d = parseF(f); d.setDate(d.getDate() + n); return ymd(d); };
+const diasEntre = (a, b) => Math.round((parseF(b) - parseF(a)) / 86400000);
+const fmtFecha = f => f ? f.split("-").reverse().join("/") : "";
+const fmtCorta = f => f ? f.slice(8, 10) + "/" + f.slice(5, 7) : "";
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+function nombreDia(f){ const d = diasEntre(f, todayStr()); if (d === 0) return "Hoy"; if (d === 1) return "Ayer"; const s = DIAS[parseF(f).getDay()]; return s[0].toUpperCase() + s.slice(1) + " " + fmtCorta(f); }
+const ls = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k, v){ try { localStorage.setItem(k, v); } catch {} } };
+const lsJson = (k, d) => { try { return JSON.parse(ls.get(k)) ?? d; } catch { return d; } };
+let toastT;
+function toast(m, ms = 3500){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
+const rndKey = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"[b % 57]).join("");
+
+/* ================= DATOS DE EJEMPLO (vista previa) ================= */
+function hashStr(s){ let h = 1779033703 ^ s.length; for (let i = 0; i < s.length; i++){ h = Math.imul(h ^ s.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; }
+function rng(seed){ let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const SALAS_BASE = ["Cadenasso","Tradicional","Rotativa","Mi Tierra","Bellavista","Casa Anita","Radales","Ciruelillo"];
+const NOMBRES = ["Juan Soto","Pedro Muñoz","Manuel Vera","Carlos Díaz","José Ruiz","Miguel Paredes","Raúl Ojeda","Hugo Navarro","Diego Toledo","Andrés Vidal","Jorge Cárcamo","Pablo Oyarzo","Cristián Mansilla","Felipe Gallardo","Mario Alarcón","Héctor Uribe"];
+const OBS = {
+  A1:"Faltan guantes de nitrilo en la sala.", A2:"Bebederos del patio sin agua; bomba no partía.", A3:"Fase 2 marca 190 V.", A4:"Generador no arranca en automático.",
+  A5:"Estanque 2 con restos de leche en la válvula.", A6:"Manguera de retorno suelta en estanque 1.", A7:"No quedan filtros de repuesto.", A8:"Válvula del pre-enfriador trabada.",
+  A9:"Agua caliente a 55 °C, bajo lo normal.", A10:"Ruido fuerte en bomba de vacío 2.", A11:"Comedero del puesto 14 no dosifica.", A12:"Queda poco dipping, alcanza para un turno.",
+  B1:"Corte de luz breve al terminar.", B2:"Estanque del potrero 3 bajo.", B3:"Agua caliente insuficiente para el lavado.", B4:"Falta detergente alcalino.",
+  B5:"Leche a 6 °C después de 2 horas.", B6:"No se tomó la muestra: no había frascos.", B7:"Mangueras en el piso.", B8:"Patio de espera sin lavar."
+};
+const NOTAS = ["Se repuso el material desde bodega.","Revisado por mantención; quedó funcionando.","Se cambió la pieza dañada.","Se conversó con el equipo y se corrigió.","Eléctrico revisó y ajustó.","Se compró y se dejó stock."];
+const salasDemo = () => lsJson("lec.panel.salas", null) || SALAS_BASE.map((n, i) => ({id: "s-" + n.toLowerCase().replace(/ /g, ""), nombre: n, clave: "demo" + hashStr(n).toString(36), desde: addDays(todayStr(), -20 - i), activa: true}));
+const personasDemo = () => lsJson("lec.panel.personas", null) || [
+  {nombre: "Benjamín Barrientos", correo: "b.barrientos@puduhue.cl", rol: "admin"},
+  {nombre: "Supervisor de ejemplo", correo: "supervisor.ejemplo@puduhue.cl", rol: "sup"},
+  {nombre: "Encargado de ejemplo", correo: "encargado.ejemplo@puduhue.cl", rol: "enc", salas: ["s-radales", "s-ciruelillo"]}];
+const regCache = {};
+function genRegistro(sala, fecha, turno){
+  const id = `${sala.id}_${fecha}_${turno}`;
+  if (regCache[id] !== undefined) return regCache[id];
+  const hoy = todayStr(), h = new Date().getHours();
+  if (fecha > hoy || fecha < addDays(hoy, -45) || fecha < sala.desde){ regCache[id] = null; return null; }
+  const r = {id, salaId: sala.id, sala: sala.nombre, fecha, turno, administrador: "Administrador " + sala.nombre, partes: {}, items: {}, seguimiento: {}};
+  const base = hashStr(sala.id) % NOMBRES.length;
+  for (const S of ["A", "B"]){
+    const R = rng(hashStr(id + S));
+    if (fecha === hoy){ const lim = {AM: {A: 6, B: 9}, PM: {A: 16, B: 19}}[turno][S]; if (h < lim) continue; }
+    if (R() < 0.07) continue;
+    const parcial = R() < 0.08;
+    const hh = {AM: {A: 5, B: 8}, PM: {A: 15, B: 18}}[turno][S];
+    r.partes[S] = {completadoPor: NOMBRES[(base + Math.floor(R() * 3)) % NOMBRES.length], horaRegistro: `${pad(hh)}:${pad(Math.floor(R() * 50) + 5)}`};
+    for (const k of secKeys(S)){
+      if (parcial && R() < 0.4) continue;
+      const x = R();
+      const est = (k === "A4" && x < 0.6) ? "NA" : x < 0.022 ? "NC" : x < 0.05 ? "NA" : "C";
+      r.items[k] = {estado: est, obs: est === "NC" ? OBS[k] : "", foto: est === "NA" ? "" : "demo:" + Math.floor(R() * 360)};
+      if (est === "NC"){
+        const edad = diasEntre(fecha, hoy);
+        if (edad > 1 && R() < Math.min(0.96, 0.35 + edad * 0.15)) r.seguimiento[k] = {estado: "cerrado", nota: NOTAS[Math.floor(R() * NOTAS.length)], por: "Supervisor de ejemplo", en: addDays(fecha, 1 + Math.floor(R() * 3))};
+      }
+    }
+  }
+  if (!Object.keys(r.partes).length){ regCache[id] = null; return null; }
+  const seg = lsJson("lec.panel.seg", {});
+  for (const [key, v] of Object.entries(seg)){ const [rid, k] = key.split("|"); if (rid === id) r.seguimiento[k] = v; }
+  regCache[id] = r; return r;
+}
+function fotoSrc(foto){
+  if (!foto) return "";
+  if (foto.startsWith("demo:")){
+    const hue = +foto.slice(5);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},35%,62%)"/><stop offset="1" stop-color="hsl(${(hue + 40) % 360},30%,40%)"/></linearGradient></defs><rect width="320" height="240" fill="url(#g)"/><circle cx="160" cy="105" r="34" fill="none" stroke="#fff" stroke-width="7" opacity=".85"/><rect x="112" y="78" width="96" height="66" rx="10" fill="none" stroke="#fff" stroke-width="7" opacity=".85"/><text x="160" y="196" font-family="sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">Foto de ejemplo</text></svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+  return "";
+}
+const fotoUrls = {};
+async function fotoUrl(foto){
+  if (!foto) return "";
+  if (DEMO || foto.startsWith("demo:")) return fotoSrc(foto);
+  if (fotoUrls[foto]) return fotoUrls[foto];
+  const r = await fetch(API + "/api/admin/foto?ruta=" + encodeURIComponent(foto), {headers: {Authorization: "Bearer " + (await token())}});
+  if (!r.ok) throw new Error("foto");
+  return (fotoUrls[foto] = URL.createObjectURL(await r.blob()));
+}
+function imgFoto(foto, cls, zoomLbl){
+  if (!foto) return "";
+  const src = DEMO ? fotoSrc(foto) : (fotoUrls[foto] || "");
+  return `<img ${cls ? `class="${cls}"` : ""} alt="Foto" ${src ? `src="${src}"` : `data-foto="${esc(foto)}"`} data-zoom="${esc(zoomLbl || "Foto")}" style="background:var(--surface-2)">`;
+}
+async function hidratarFotos(root){
+  const imgs = [...(root || document).querySelectorAll("img[data-foto]")];
+  let i = 0;
+  const worker = async () => { while (i < imgs.length){ const im = imgs[i++]; try { im.src = await fotoUrl(im.dataset.foto); im.removeAttribute("data-foto"); } catch {} } };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+}
+
+/* ================= ACCESO A DATOS ================= */
+let user = null, salas = [], personas = [];
+const DB = {regs: {}, meses: new Set()};
+let msalApp = null, cuenta = null;
+async function token(){
+  try { return (await msalApp.acquireTokenSilent({scopes: ["User.Read"], account: cuenta})).accessToken; }
+  catch { await msalApp.acquireTokenRedirect({scopes: ["User.Read"], account: cuenta}); return new Promise(() => {}); }
+}
+async function api(path, opts = {}){
+  const r = await fetch(API + path, {...opts, headers: {...(opts.headers || {}), Authorization: "Bearer " + (await token()), ...(opts.body ? {"Content-Type": "application/json"} : {})}});
+  let j = null; try { j = await r.json(); } catch {}
+  if (!r.ok){ const e = new Error((j && j.mensaje) || "Error " + r.status); e.status = r.status; e.code = j && j.error; e.data = j; throw e; }
+  return j;
+}
+const mesesEntre = (desde, hasta) => { const out = []; let [y, m] = desde.split("-").map(Number); const [yh, mh] = hasta.split("-").map(Number);
+  while (y < yh || (y === yh && m <= mh)){ out.push(`${y}-${pad(m)}`); m++; if (m > 12){ m = 1; y++; } } return out; };
+async function asegurar(desde, hasta){
+  if (DEMO) return;
+  const falta = mesesEntre(desde, hasta).filter(m => !DB.meses.has(m));
+  if (!falta.length) return;
+  $("cargando").hidden = false;
+  try {
+    for (let i = 0; i < falta.length; i += 3){
+      const j = await api("/api/admin/registros?meses=" + falta.slice(i, i + 3).join(","));
+      for (const a of j.archivos) for (const r of Object.values(a.registros || {})){ r.seguimiento = r.seguimiento || {}; r.partes = r.partes || {}; r.items = r.items || {}; DB.regs[r.id] = r; }
+      j.meses.forEach(m => DB.meses.add(m));
+    }
+  } catch (e) { toast("No se pudieron cargar los datos: " + e.message, 5000); }
+  finally { $("cargando").hidden = true; }
+}
+async function conDatos(desde, hasta, fn){ await asegurar(desde, hasta); fn(); }
+const visibles = () => user.rol === "enc" ? salas.filter(s => (user.salas || []).includes(s.id)) : salas.filter(s => s.activa !== false);
+const salaById = id => salas.find(s => s.id === id);
+function registro(salaId, fecha, turno){ const s = salaById(salaId); if (!s) return null; return DEMO ? genRegistro(s, fecha, turno) : (DB.regs[`${salaId}_${fecha}_${turno}`] || null); }
+function registrosRango(desde, hasta, salaId, turno){
+  const out = [];
+  for (let f = hasta; f >= desde; f = addDays(f, -1))
+    for (const s of visibles()) { if (salaId && s.id !== salaId) continue;
+      for (const t of ["AM", "PM"]) { if (turno && t !== turno) continue; const r = registro(s.id, f, t); if (r) out.push(r); } }
+  return out;
+}
+function hallazgos(){
+  const out = [], hoy = todayStr();
+  for (const r of registrosRango(addDays(hoy, -45), hoy)) for (const [k, it] of Object.entries(r.items))
+    if (it.estado === "NC") out.push({r, k, it, seg: r.seguimiento[k] || null});
+  return out;
+}
+async function cerrarHallazgo(r, k, nota){
+  if (!DEMO){ const j = await api("/api/admin/hallazgo", {method: "POST", body: JSON.stringify({salaId: r.salaId, fecha: r.fecha, turno: r.turno, item: k, nota})}); r.seguimiento[k] = j.seguimiento; return; }
+  const v = {estado: "cerrado", nota, por: user.nombre, en: todayStr()};
+  r.seguimiento[k] = v;
+  const seg = lsJson("lec.panel.seg", {}); seg[`${r.id}|${k}`] = v; ls.set("lec.panel.seg", JSON.stringify(seg));
+}
+const guardarSalas = () => ls.set("lec.panel.salas", JSON.stringify(salas));
+const guardarPersonas = () => ls.set("lec.panel.personas", JSON.stringify(personas));
+
+/* ================= CÁLCULOS ================= */
+function slotInfo(r, S, fecha){
+  const tot = secKeys(S).length, n = r ? secKeys(S).filter(k => r.items[k]).length : 0, p = r?.partes?.[S];
+  const nc = r ? secKeys(S).filter(k => r.items[k]?.estado === "NC").length : 0;
+  if (n === tot) return {cls: "ok", ic: "✓", txt: "Completo", det: `${p?.horaRegistro || ""} · ${p?.completadoPor || ""}`, nc};
+  if (n > 0) return {cls: "warn", ic: "◐", txt: `Incompleto ${n}/${tot}`, det: `${p?.horaRegistro || ""} · ${p?.completadoPor || ""}`, nc};
+  if (fecha < todayStr()) return {cls: "bad", ic: "✕", txt: "No se hizo", det: "Nadie lo envió", nc: 0};
+  return {cls: "na", ic: "…", txt: "Pendiente", det: "Aún no se envía", nc: 0};
+}
+function cumplimiento(items){ const v = Object.values(items); const c = v.filter(i => i.estado === "C").length, nc = v.filter(i => i.estado === "NC").length; return c + nc ? Math.round(c * 100 / (c + nc)) : null; }
+const pctTxt = p => p === null ? "—" : p + "%";
+
+/* ================= NAVEGACIÓN ================= */
+let vista = "hoy";
+function irA(v){
+  vista = v;
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
+  ["hoy","hall","hist","inf","salas","pers"].forEach(x => $("v-" + x).hidden = x !== v);
+  ({hoy: renderHoy, hall: renderHall, hist: renderHist, inf: renderInf, salas: renderSalas, pers: renderPers})[v]();
+  window.scrollTo(0, 0);
+}
+$("tabs").onclick = e => { const b = e.target.closest("button"); if (b) irA(b.dataset.v); };
+function actualizarBadge(){ const n = hallazgos().filter(h => !h.seg).length; const b = $("b-hall"); b.hidden = !n; b.textContent = n; }
+function salaOptions(sel, todas = true){ const v = sel.value; sel.innerHTML = (todas ? `<option value="">Todas</option>` : "") + visibles().map(s => `<option value="${s.id}">${esc(s.nombre)}</option>`).join(""); if ([...sel.options].some(o => o.value === v)) sel.value = v; }
+
+/* ---------- diálogo ---------- */
+const dlg = $("dlg");
+function abrir(titulo, html){ $("dlg-t").textContent = titulo; $("dlg-b").innerHTML = html; if (!dlg.open) dlg.showModal(); $("dlg-b").scrollTop = 0; }
+$("dlg-x").onclick = () => dlg.close();
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+function zoom(src, cap){ abrir(cap || "Foto", `<div class="zoom"><img src="${src}" alt=""></div>`); }
+document.addEventListener("click", e => { const im = e.target.closest("img[data-zoom]"); if (im){ e.preventDefault(); zoom(im.src, im.dataset.zoom); } });
+
+/* ================= HOY ================= */
+function renderHoy(){
+  const f = $("hoy-fecha").value || todayStr();
+  $("hoy-fecha").value = f; $("hoy-lbl").textContent = nombreDia(f);
+  $("hoy-next").disabled = f >= todayStr();
+  const vs = visibles();
+  let ok = 0, tot = vs.length * 4, sinProb = 0, ncDia = 0;
+  const cards = vs.map(s => {
+    const regs = {AM: registro(s.id, f, "AM"), PM: registro(s.id, f, "PM")};
+    let prob = false, items = {};
+    const slots = SLOTS.map(([t, S]) => {
+      const i = slotInfo(regs[t], S, f);
+      if (i.cls === "ok") ok++; if (i.cls === "warn" || i.cls === "bad") prob = true; ncDia += i.nc;
+      if (regs[t]) secKeys(S).forEach(k => { if (regs[t].items[k]) items[t + k] = regs[t].items[k]; });
+      return `<button type="button" class="slot ${i.cls}" data-s="${s.id}" data-t="${t}" data-p="${S}" ${i.cls === "na" || i.cls === "bad" ? "disabled" : ""}>
+        <span class="t">${t} · ${PARTE_CORTO[S]}</span><span class="s">${i.ic} ${i.txt}</span><span class="d">${esc(i.det)}${i.nc ? ` · <b style="color:var(--bad)">${i.nc} hallazgo${i.nc > 1 ? "s" : ""}</b>` : ""}</span></button>`;
+    }).join("");
+    if (!prob) sinProb++;
+    const p = cumplimiento(items);
+    return `<div class="sala-card"><div class="top"><h3>${esc(s.nombre)}</h3><span class="sub" title="Ítems que cumplen, sin contar N/A">Cumplimiento <b class="pct">${pctTxt(p)}</b></span></div><div class="slots">${slots}</div></div>`;
+  }).join("");
+  const abiertos = hallazgos().filter(h => !h.seg).length;
+  $("hoy-kpis").innerHTML = `
+    <div class="kpi"><small>Controles completos</small><b>${ok} <span style="font-size:18px;color:var(--muted)">de ${tot}</span></b><div class="bar"><span style="width:${tot ? ok * 100 / tot : 0}%"></span></div></div>
+    <div class="kpi"><small>Salas sin problemas</small><b>${sinProb} <span style="font-size:18px;color:var(--muted)">de ${vs.length}</span></b><small>sin controles incompletos ni faltantes</small></div>
+    <div class="kpi"><small>Hallazgos del día</small><b style="color:${ncDia ? "var(--bad)" : "inherit"}">${ncDia}</b><small>ítems "No cumple" en esta fecha</small></div>
+    <div class="kpi" style="cursor:pointer" id="kpi-abiertos"><small>Hallazgos abiertos (total)</small><b style="color:${abiertos ? "var(--warn)" : "inherit"}">${abiertos}</b><small>toca para verlos →</small></div>`;
+  $("kpi-abiertos").onclick = () => irA("hall");
+  $("hoy-salas").innerHTML = cards || `<div class="empty">No tienes salas asignadas.</div>`;
+  actualizarBadge();
+}
+$("hoy-salas").onclick = e => { const b = e.target.closest(".slot"); if (!b || b.disabled) return; const r = registro(b.dataset.s, $("hoy-fecha").value, b.dataset.t); if (r) verDetalle(r, b.dataset.p); };
+const hoyCon = () => { const f = $("hoy-fecha").value || todayStr(); conDatos(f, f, renderHoy); };
+$("hoy-fecha").onchange = hoyCon;
+$("hoy-prev").onclick = () => { $("hoy-fecha").value = addDays($("hoy-fecha").value || todayStr(), -1); hoyCon(); };
+$("hoy-next").onclick = () => { const n = addDays($("hoy-fecha").value || todayStr(), 1); if (n <= todayStr()){ $("hoy-fecha").value = n; hoyCon(); } };
+
+/* ---------- detalle de un check list ---------- */
+function verDetalle(r, foco){
+  const orden = foco === "B" ? ["B", "A"] : ["A", "B"];
+  const secs = orden.map(S => {
+    const s = SECCIONES.find(x => x.k === S), p = r.partes[S], inf = slotInfo(r, S, r.fecha);
+    const rows = s.items.map((t, i) => { const k = S + (i + 1), it = r.items[k];
+      const ic = it ? {C: "✓", NC: "✕", NA: "N/A"}[it.estado] : "—", cls = it ? it.estado : "X";
+      return `<div class="det-it"><span class="ic ${cls}">${ic}</span><div class="tx">${i + 1}. ${esc(t)}${it?.obs ? `<div class="obs">${esc(it.obs)}</div>` : ""}${!it ? `<div class="sub" style="font-size:12.5px">Sin respuesta</div>` : ""}</div>${imgFoto(it?.foto, "", k + " · " + t)}</div>`; }).join("");
+    return `<div class="det-sec"><h4><span>${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${inf.txt}</span></h4>
+      <div class="sub" style="font-size:13.5px">${p ? `Responsable: <b style="color:var(--fg)">${esc(p.completadoPor)}</b> · Hora: <b style="color:var(--fg)">${esc(p.horaRegistro)}</b>` : "Esta parte no se envió."}</div>${p ? rows : ""}</div>`;
+  }).join("");
+  const p = cumplimiento(r.items);
+  abrir(`Sala ${r.sala} · ${fmtFecha(r.fecha)} · ${r.turno}`,
+    `<div class="kv"><div><span class="lbl">Administrador</span>${esc(r.administrador || "—")}</div><div><span class="lbl">Cumplimiento</span><b class="pct">${pctTxt(p)}</b></div><div><span class="lbl">Área</span>Sala de ordeña</div></div>${secs}
+     <p class="sub" style="font-size:12.5px">✓ Cumple · ✕ No cumple · N/A no aplica. Toca una foto para verla grande.</p>`);
+  hidratarFotos($("dlg-b"));
+}
+
+/* ================= HALLAZGOS ================= */
+let hEstado = "abierto";
+$("h-estado").onclick = e => { const b = e.target.closest("button"); if (!b) return; hEstado = b.dataset.v; document.querySelectorAll("#h-estado button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderHall(); };
+$("h-sala").onchange = renderHall;
+function renderHall(){
+  salaOptions($("h-sala"));
+  const sid = $("h-sala").value, hoy = todayStr();
+  let l = hallazgos().filter(h => !sid || h.r.salaId === sid);
+  if (hEstado === "abierto") l = l.filter(h => !h.seg).sort((a, b) => a.r.fecha.localeCompare(b.r.fecha));
+  else if (hEstado === "cerrado") l = l.filter(h => h.seg).sort((a, b) => b.seg.en.localeCompare(a.seg.en));
+  else l.sort((a, b) => b.r.fecha.localeCompare(a.r.fecha));
+  $("h-list").innerHTML = l.length ? l.map((h, i) => {
+    const d = diasEntre(h.r.fecha, hoy), p = h.r.partes[h.k[0]];
+    const chip = h.seg ? `<span class="chip ok">Cerrado</span>` : `<span class="chip ${d > 3 ? "bad" : "warn"}">${d === 0 ? "Abierto desde hoy" : `Abierto hace ${d} día${d > 1 ? "s" : ""}`}</span>`;
+    return `<div class="hall">${imgFoto(h.it.foto, "thumb", h.k + " · " + itemText(h.k))}
+      <div class="body"><div>${chip}</div><div class="what">${esc(itemText(h.k))}</div>
+      <div class="meta">Sala <b>${esc(h.r.sala)}</b> · ${fmtFecha(h.r.fecha)} ${h.r.turno} · ${PARTE_LBL[h.k[0]]} · informó ${esc(p?.completadoPor || "—")}</div>
+      <blockquote>${esc(h.it.obs || "Sin observación")}</blockquote>
+      ${h.seg ? `<div class="closed"><b>Solución:</b> ${esc(h.seg.nota)}<br><span class="sub" style="font-size:12.5px">Cerrado el ${fmtFecha(h.seg.en)} por ${esc(h.seg.por)}</span></div>`
+        : `<div class="li-actions"><button class="btn small primary" type="button" data-cerrar="${i}">✓ Registrar solución y cerrar</button><button class="btn small" type="button" data-ver="${i}">Ver check list</button></div>`}
+      </div></div>`; }).join("")
+    : `<div class="empty">${hEstado === "abierto" ? "🎉 No hay hallazgos abiertos." : "No hay hallazgos para mostrar."}</div>`;
+  $("h-list").onclick = e => {
+    const c = e.target.closest("[data-cerrar]"), v = e.target.closest("[data-ver]");
+    if (v) verDetalle(l[+v.dataset.ver].r, l[+v.dataset.ver].k[0]);
+    if (c) dlgCerrar(l[+c.dataset.cerrar]);
+  };
+  hidratarFotos($("h-list"));
+  actualizarBadge();
+}
+function dlgCerrar(h){
+  abrir("Cerrar hallazgo", `<div><span class="lbl">Hallazgo</span><div style="font-weight:600">${esc(itemText(h.k))}</div><div class="sub" style="font-size:13.5px">Sala ${esc(h.r.sala)} · ${fmtFecha(h.r.fecha)} ${h.r.turno}</div></div>
+    <blockquote style="margin:0;padding:6px 10px;border-left:3px solid var(--bad);background:var(--bad-soft);border-radius:0 6px 6px 0">${esc(h.it.obs)}</blockquote>
+    <label class="field"><span class="lbl">¿Qué se hizo para solucionarlo? *</span><textarea id="c-nota" rows="3" placeholder="Ej.: Se cambió la manguera y se probó el sistema de frío."></textarea></label>
+    <div class="li-actions" style="justify-content:flex-end"><button class="btn" type="button" id="c-no">Cancelar</button><button class="btn primary" type="button" id="c-si">Cerrar hallazgo</button></div>`);
+  $("c-no").onclick = () => dlg.close();
+  $("c-si").onclick = async () => { const n = $("c-nota").value.trim(); if (!n){ toast("Escribe qué se hizo para solucionarlo."); $("c-nota").focus(); return; }
+    $("c-si").disabled = true; $("c-si").textContent = "Guardando…";
+    try { await cerrarHallazgo(h.r, h.k, n); dlg.close(); toast("Hallazgo cerrado."); renderHall(); }
+    catch (e) { toast("No se pudo cerrar: " + e.message, 5000); $("c-si").disabled = false; $("c-si").textContent = "Cerrar hallazgo"; } };
+  setTimeout(() => $("c-nota").focus(), 50);
+}
+
+/* ================= HISTORIAL ================= */
+function filtradosHist(){ return registrosRango($("r-desde").value, $("r-hasta").value, $("r-sala").value, $("r-turno").value); }
+function renderHist(){
+  salaOptions($("r-sala"));
+  if (!$("r-hasta").value) $("r-hasta").value = todayStr();
+  if (!$("r-desde").value) $("r-desde").value = addDays(todayStr(), -6);
+  if ($("r-desde").value > $("r-hasta").value) $("r-desde").value = $("r-hasta").value;
+  const l = filtradosHist();
+  const all = {}; l.forEach(r => Object.entries(r.items).forEach(([k, v]) => all[r.id + k] = v));
+  $("r-count").innerHTML = `<b>${l.length}</b> check list${l.length !== 1 ? "s" : ""} · cumplimiento promedio <b>${pctTxt(cumplimiento(all))}</b>`;
+  $("r-list").innerHTML = l.length ? l.map((r, i) => {
+    const a = slotInfo(r, "A", r.fecha), b = slotInfo(r, "B", r.fecha), nc = Object.values(r.items).filter(x => x.estado === "NC").length;
+    return `<div class="hist-row" data-i="${i}" role="button" tabindex="0">
+      <div class="hw"><b>${esc(r.sala)}</b> · ${fmtFecha(r.fecha)} · ${r.turno}<div class="m">${esc([r.partes.A?.completadoPor, r.partes.B?.completadoPor].filter(Boolean).filter((x, j, arr) => arr.indexOf(x) === j).join(" / "))}</div></div>
+      <span class="chip ${a.cls}" title="Antes de ordeñar">Antes</span><span class="chip ${b.cls}" title="Después de ordeñar">Después</span>
+      <span>${nc ? `<span class="chip bad">${nc} hallazgo${nc > 1 ? "s" : ""}</span>` : `<span class="pct">${pctTxt(cumplimiento(r.items))}</span>`}</span></div>`; }).join("")
+    : `<div class="empty">No hay check lists con estos filtros.</div>`;
+  $("r-list").onclick = e => { const row = e.target.closest(".hist-row"); if (row) verDetalle(l[+row.dataset.i]); };
+}
+["r-sala","r-desde","r-hasta","r-turno"].forEach(id => $(id).onchange = () => conDatos($("r-desde").value || todayStr(), $("r-hasta").value || todayStr(), renderHist));
+
+/* ================= INFORMES ================= */
+function datosDia(f){
+  return visibles().map(s => {
+    const regs = {AM: registro(s.id, f, "AM"), PM: registro(s.id, f, "PM")};
+    const slots = SLOTS.map(([t, S]) => slotInfo(regs[t], S, f));
+    const items = {}; ["AM", "PM"].forEach(t => regs[t] && Object.entries(regs[t].items).forEach(([k, v]) => items[t + k] = v));
+    const hall = []; ["AM", "PM"].forEach(t => regs[t] && Object.entries(regs[t].items).forEach(([k, v]) => { if (v.estado === "NC") hall.push({r: regs[t], k, it: v}); }));
+    return {s, regs, slots, pct: cumplimiento(items), hall};
+  });
+}
+function renderInf(){
+  if (!$("i-fecha").value) $("i-fecha").value = todayStr();
+  const f = $("i-fecha").value, d = datosDia(f);
+  const hall = d.flatMap(x => x.hall);
+  const ok = d.reduce((a, x) => a + x.slots.filter(s => s.cls === "ok").length, 0);
+  $("i-prev").innerHTML = `<h2 style="margin-bottom:2px">Informe diario · ${fmtFecha(f)}</h2>
+    <p class="sub">${ok} de ${d.length * 4} controles completos · ${hall.length} hallazgo${hall.length !== 1 ? "s" : ""} en el día</p>
+    <div class="table-wrap" style="margin-top:10px"><table class="rep-table"><thead><tr><th>Sala</th><th>AM antes</th><th>AM después</th><th>PM antes</th><th>PM después</th><th>Cumpl.</th></tr></thead><tbody>
+    ${d.map(x => `<tr><td><b>${esc(x.s.nombre)}</b></td>${x.slots.map(s => `<td><span class="chip ${s.cls}">${s.cls === "ok" ? "✓" : s.cls === "warn" ? "◐" : s.cls === "bad" ? "✕" : "…"}</span></td>`).join("")}<td class="pct">${pctTxt(x.pct)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <h3 style="margin-top:16px">Hallazgos del día</h3>
+    ${hall.length ? hall.map(h => `<div class="hall">${imgFoto(h.it.foto, "thumb", itemText(h.k))}<div class="body"><div class="what">${esc(itemText(h.k))}</div><div class="meta">Sala ${esc(h.r.sala)} · ${h.r.turno} · ${PARTE_LBL[h.k[0]]}</div><blockquote>${esc(h.it.obs)}</blockquote></div></div>`).join("") : `<p class="sub">Sin hallazgos en esta fecha.</p>`}`;
+  hidratarFotos($("i-prev"));
+}
+$("i-fecha").onchange = () => conDatos($("i-fecha").value, $("i-fecha").value, renderInf);
+const libs = {};
+function loadScript(src){ return libs[src] || (libs[src] = new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error("load")); }; document.head.appendChild(s); })); }
+function descargar(nombre, blob){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(DEMO ? `Archivo generado: ${nombre}. En la vista previa el navegador puede bloquear la descarga; en la app real se descarga normalmente.` : `Descargando ${nombre}…`, 5000);
+}
+async function imgJpeg(src){
+  const img = await new Promise((res, rej) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  const c = document.createElement("canvas"); const sc = Math.min(1, 480 / Math.max(img.width, img.height)); c.width = img.width * sc; c.height = img.height * sc;
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.75);
+}
+$("i-pdf").onclick = async () => {
+  const f = $("i-fecha").value, d = datosDia(f);
+  try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"); await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"); }
+  catch { toast("No se pudo cargar el generador de PDF. Revisa la conexión."); return; }
+  const doc = new window.jspdf.jsPDF({unit: "mm", format: "a4"});
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("Informe diario · Check list de ordeña", 14, 18);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.text(`Puduhue · ${fmtFecha(f)}`, 14, 25);
+  const sym = s => s.cls === "ok" ? "Completo" : s.cls === "warn" ? "Incompleto" : s.cls === "bad" ? "No se hizo" : "Pendiente";
+  doc.autoTable({startY: 31, head: [["Sala", "AM antes", "AM después", "PM antes", "PM después", "Cumpl."]], body: d.map(x => [x.s.nombre, ...x.slots.map(sym), pctTxt(x.pct)]), styles: {fontSize: 9}, headStyles: {fillColor: [44, 79, 160]},
+    didParseCell: c => { if (c.section === "body" && c.column.index >= 1 && c.column.index <= 4){ const t = c.cell.raw; c.cell.styles.textColor = t === "Completo" ? [30, 122, 70] : t === "No se hizo" ? [179, 38, 30] : t === "Incompleto" ? [154, 98, 0] : [107, 119, 128]; } }});
+  let y = doc.lastAutoTable.finalY + 10;
+  const hall = d.flatMap(x => x.hall);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(`Hallazgos del día (${hall.length})`, 14, y); y += 6;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  if (!hall.length) doc.text("Sin hallazgos en esta fecha.", 14, y + 2);
+  for (const h of hall){
+    if (y > 245){ doc.addPage(); y = 18; }
+    try { if (h.it.foto) doc.addImage(await imgJpeg(await fotoUrl(h.it.foto)), "JPEG", 14, y, 40, 30); } catch {}
+    doc.setFont("helvetica", "bold"); doc.text(doc.splitTextToSize(itemText(h.k), 135), 58, y + 4);
+    doc.setFont("helvetica", "normal"); doc.text(`Sala ${h.r.sala} · ${h.r.turno} · ${PARTE_LBL[h.k[0]]} · ${h.r.partes[h.k[0]]?.completadoPor || ""}`, 58, y + 15);
+    doc.setTextColor(179, 38, 30); doc.text(doc.splitTextToSize(h.it.obs || "", 135), 58, y + 21); doc.setTextColor(0);
+    y += 36;
+  }
+  descargar(`Informe_Ordena_${f}.pdf`, doc.output("blob"));
+};
+async function excel(nombre, regs, consolidado){
+  try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"); } catch { toast("No se pudo cargar el generador de Excel. Revisa la conexión."); return; }
+  const wb = XLSX.utils.book_new();
+  const add = (aoa, name, w) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = w.map(x => ({wch: x})); XLSX.utils.book_append_sheet(wb, ws, name); };
+  if (consolidado) add([["Sala", "AM antes", "AM después", "PM antes", "PM después", "% Cumplimiento"], ...consolidado.map(x => [x.s.nombre, ...x.slots.map(s => s.txt), x.pct === null ? "" : x.pct / 100])], "Consolidado", [16, 16, 16, 16, 16, 14]);
+  const res = [["Fecha", "Turno", "Sala", "Parte", "Responsable", "Hora", "Administrador", "Respondidos", "Cumple", "No cumple", "N/A"]];
+  const det = [["Fecha", "Turno", "Sala", "Parte", "N°", "Ítem", "Resultado", "Observación", "Responsable"]];
+  const hal = [["Fecha", "Turno", "Sala", "Parte", "Ítem", "Observación", "Estado", "Solución", "Cerrado por", "Fecha cierre"]];
+  for (const r of regs) for (const S of ["A", "B"]){ const p = r.partes[S]; if (!p) continue;
+    const it = secKeys(S).map(k => r.items[k]).filter(Boolean);
+    res.push([fmtFecha(r.fecha), r.turno, r.sala, PARTE_LBL[S], p.completadoPor, p.horaRegistro, r.administrador, it.length, it.filter(x => x.estado === "C").length, it.filter(x => x.estado === "NC").length, it.filter(x => x.estado === "NA").length]);
+    secKeys(S).forEach(k => { const x = r.items[k]; det.push([fmtFecha(r.fecha), r.turno, r.sala, PARTE_LBL[S], +k.slice(1), itemText(k), x ? {C: "Cumple", NC: "No cumple", NA: "N/A"}[x.estado] : "Sin respuesta", x?.obs || "", p.completadoPor]);
+      if (x?.estado === "NC"){ const sg = r.seguimiento[k]; hal.push([fmtFecha(r.fecha), r.turno, r.sala, PARTE_LBL[S], itemText(k), x.obs, sg ? "Cerrado" : "Abierto", sg?.nota || "", sg?.por || "", sg ? fmtFecha(sg.en) : ""]); } }); }
+  add(res, "Resumen", [11, 6, 14, 18, 20, 7, 24, 11, 8, 10, 6]); add(det, "Detalle", [11, 6, 14, 18, 4, 70, 13, 40, 20]); add(hal, "Hallazgos", [11, 6, 14, 18, 60, 40, 9, 40, 20, 12]);
+  const wbout = XLSX.write(wb, {type: "array", bookType: "xlsx"});
+  descargar(nombre, new Blob([wbout], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+}
+$("i-xlsx").onclick = () => { const f = $("i-fecha").value; excel(`Informe_Ordena_${f}.xlsx`, ["AM", "PM"].flatMap(t => visibles().map(s => registro(s.id, f, t)).filter(Boolean)), datosDia(f)); };
+$("r-xlsx").onclick = () => excel(`Checklist_Ordena_${$("r-desde").value}_a_${$("r-hasta").value}.xlsx`, filtradosHist());
+
+/* ================= SALAS Y QR ================= */
+const qrUrl = s => APP_URL + "?k=" + s.clave;
+async function qrSvg(texto){
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js");
+  const q = qrcode(0, "M"); q.addData(texto); q.make(); return q.createSvgTag({cellSize: 8, margin: 2, scalable: true});
+}
+function renderSalas(){
+  const act = salas.filter(s => s.activa !== false);
+  $("s-count").textContent = `${act.length} salas activas`;
+  $("s-list").innerHTML = act.map(s => `<div class="li"><div class="body"><b style="font-size:16px">${esc(s.nombre)}</b><span class="meta">${s.desde ? "QR vigente desde el " + fmtFecha(s.desde) : "QR vigente"}</span></div>
+    <div class="li-actions"><button class="btn small" type="button" data-qr="${s.id}">Ver QR</button><button class="btn small danger" type="button" data-rep="${s.id}">Reemplazar QR</button></div></div>`).join("");
+}
+$("s-list").onclick = e => { const q = e.target.closest("[data-qr]"), r = e.target.closest("[data-rep]");
+  if (q) verQR(salaById(q.dataset.qr)); if (r) reemplazarQR(salaById(r.dataset.rep)); };
+async function verQR(s){
+  abrir(`QR · Sala ${s.nombre}`, `<div class="qr-box"><div class="qr" id="qr-img"><div class="spin" style="margin:40px auto"></div></div><b style="font-size:20px">Sala ${esc(s.nombre)}</b><span class="sub">${s.desde ? "Vigente desde el " + fmtFecha(s.desde) + ". " : ""}Al escanearlo se abre el check list de esta sala.</span>
+    <div class="li-actions"><button class="btn primary" type="button" id="qr-print">🖨 Imprimir</button></div>${DEMO ? `<span class="sub" style="font-size:12px">Vista previa: este QR es de ejemplo y no abre la app real.</span>` : ""}</div>`);
+  try { $("qr-img").innerHTML = await qrSvg(qrUrl(s)); } catch { $("qr-img").innerHTML = `<p class="sub">No se pudo generar el QR.</p>`; }
+  $("qr-print").onclick = () => imprimirQR([s]);
+}
+async function imprimirQR(lista){
+  const pa = $("print-area"); pa.innerHTML = "";
+  for (const s of lista){ const svg = await qrSvg(qrUrl(s));
+    pa.insertAdjacentHTML("beforeend", `<div class="qr-page"><div style="letter-spacing:.3em;color:#5C3815;font-weight:700">PUDUHUE</div><div style="font-size:24px;font-weight:700">Check List Ordeña</div><h1>Sala ${esc(s.nombre)}</h1><div style="width:320px;margin:0 auto">${svg}</div><p style="font-size:16px;font-weight:700">Escanea este código con la cámara del teléfono</p><p style="color:#5A6A74">Completa el check list en cada turno: AM y PM, antes y después de ordeñar.</p></div>`); }
+  window.print();
+}
+$("s-print-all").onclick = () => imprimirQR(salas.filter(s => s.activa !== false)).catch(() => toast("No se pudo preparar la impresión."));
+function reemplazarQR(s){
+  abrir(`Reemplazar QR · ${s.nombre}`, `<div class="notice warn"><b>¿Seguro?</b> El QR actual de la sala <b>${esc(s.nombre)}</b> dejará de funcionar de inmediato. Los teléfonos que lo usaban tendrán que escanear el QR nuevo.</div>
+    <p class="sub">Úsalo si el QR se perdió, se dañó o lo tiene alguien que no debería. Después imprime el nuevo y retira el anterior de la sala.</p>
+    <div class="li-actions" style="justify-content:flex-end"><button class="btn" type="button" id="rq-no">Cancelar</button><button class="btn danger" type="button" id="rq-si">Sí, reemplazar</button></div>`);
+  $("rq-no").onclick = () => dlg.close();
+  $("rq-si").onclick = async () => {
+    if (DEMO){ s.clave = rndKey(); s.desde = todayStr(); guardarSalas(); toast("QR reemplazado. Imprime el nuevo."); renderSalas(); verQR(s); return; }
+    $("rq-si").disabled = true; $("rq-si").textContent = "Reemplazando…";
+    try { salas = (await api("/api/admin/salas", {method: "POST", body: JSON.stringify({accion: "reemplazar", salaId: s.id})})).salas; toast("QR reemplazado. Imprime el nuevo."); renderSalas(); verQR(salaById(s.id)); }
+    catch (e) { toast("No se pudo reemplazar: " + e.message, 5000); $("rq-si").disabled = false; $("rq-si").textContent = "Sí, reemplazar"; } };
+}
+$("s-add").onclick = async () => {
+  const n = $("s-nombre").value.trim(); if (!n){ toast("Escribe el nombre de la sala."); return; }
+  if (!DEMO){
+    try { salas = (await api("/api/admin/salas", {method: "POST", body: JSON.stringify({accion: "agregar", nombre: n})})).salas; $("s-nombre").value = ""; toast(`Sala ${n} agregada.`); renderSalas(); verQR(salas.find(s => s.nombre === n) || salas[salas.length - 1]); }
+    catch (e) { toast(e.message, 5000); }
+    return;
+  }
+  const id = "s-" + n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+  if (salas.some(s => s.id === id)){ toast("Ya existe una sala con ese nombre."); return; }
+  const s = {id, nombre: n, clave: rndKey(), desde: todayStr(), activa: true}; salas.push(s); guardarSalas(); $("s-nombre").value = "";
+  toast(`Sala ${n} agregada.`); renderSalas(); verQR(s);
+};
+
+/* ================= PERSONAS ================= */
+const iniciales = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0].toUpperCase()).join("");
+async function renderPers(){
+  if (!DEMO && !personas.length){ $("p-list").innerHTML = `<div class="empty">Cargando…</div>`; try { personas = (await api("/api/admin/personas")).personas; } catch (e) { $("p-list").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } }
+  $("p-list").innerHTML = personas.map((p, i) => `<div class="person"><span class="av">${esc(iniciales(p.nombre))}</span>
+    <div class="body"><b>${esc(p.nombre)}</b>${p.correo === user.correo ? ` <span class="sub">(tú)</span>` : ""}<div class="sub" style="font-size:13px">${esc(p.correo)}</div>
+    ${p.rol === "enc" ? `<div class="sub" style="font-size:13px">Salas: ${esc((p.salas || []).map(id => salaById(id)?.nombre || id).join(", ") || "ninguna")}</div>` : ""}</div>
+    <span class="chip ${p.rol === "admin" ? "ok" : p.rol === "sup" ? "warn" : "na"}">${ROL_LBL[p.rol]}</span>
+    <div class="li-actions"><button class="btn small" type="button" data-ed="${i}">Editar</button>${p.correo !== user.correo ? `<button class="btn small danger" type="button" data-del="${i}">Quitar</button>` : ""}</div></div>`).join("");
+}
+$("p-list").onclick = e => { const ed = e.target.closest("[data-ed]"), del = e.target.closest("[data-del]");
+  if (ed) dlgPersona(+ed.dataset.ed);
+  if (del){ const p = personas[+del.dataset.del];
+    abrir("Quitar acceso", `<p>¿Quitar el acceso de <b>${esc(p.nombre)}</b> (${esc(p.correo)})? Dejará de poder entrar al panel de inmediato.</p><div class="li-actions" style="justify-content:flex-end"><button class="btn" id="q-no" type="button">Cancelar</button><button class="btn danger" id="q-si" type="button">Quitar acceso</button></div>`);
+    $("q-no").onclick = () => dlg.close();
+    $("q-si").onclick = async () => { const nueva = personas.filter(x => x !== p);
+      try { await guardarLista(nueva); dlg.close(); toast("Acceso quitado."); renderPers(); } catch (e) { toast(e.message, 5000); } }; } };
+async function guardarLista(nueva){
+  if (DEMO){ personas = nueva; guardarPersonas(); return; }
+  personas = (await api("/api/admin/personas", {method: "PUT", body: JSON.stringify({personas: nueva})})).personas;
+}
+$("p-add").onclick = () => dlgPersona(-1);
+function dlgPersona(i){
+  const p = i >= 0 ? personas[i] : {nombre: "", correo: "", rol: "sup", salas: []};
+  abrir(i >= 0 ? "Editar persona" : "Agregar persona", `
+    <label class="field"><span class="lbl">Nombre *</span><input id="pp-n" value="${esc(p.nombre)}" placeholder="Nombre y apellido"></label>
+    <label class="field"><span class="lbl">Correo de Puduhue *</span><input id="pp-c" type="email" value="${esc(p.correo)}" placeholder="nombre@puduhue.cl" autocapitalize="off"></label>
+    <div class="field"><span class="lbl">Nivel de acceso *</span><div class="pills" id="pp-r">${Object.entries(ROL_LBL).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="${p.rol === k}">${v}</button>`).join("")}</div><span class="sub" id="pp-rd" style="font-size:13px"></span></div>
+    <div class="field" id="pp-sw"><span class="lbl">Salas que puede ver *</span><div class="checks">${salas.filter(s => s.activa !== false).map(s => `<label><input type="checkbox" value="${s.id}" ${(p.salas || []).includes(s.id) ? "checked" : ""}> ${esc(s.nombre)}</label>`).join("")}</div></div>
+    <div class="li-actions" style="justify-content:flex-end"><button class="btn" id="pp-no" type="button">Cancelar</button><button class="btn primary" id="pp-si" type="button">Guardar</button></div>`);
+  let rol = p.rol;
+  const desc = {admin: "Ve todo y gestiona salas, QR y personas.", sup: "Ve todas las salas y cierra hallazgos.", enc: "Ve solo las salas que marques abajo y cierra sus hallazgos."};
+  const upd = () => { document.querySelectorAll("#pp-r button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === rol)); $("pp-sw").hidden = rol !== "enc"; $("pp-rd").textContent = desc[rol]; };
+  $("pp-r").onclick = e => { const b = e.target.closest("button"); if (!b) return; if (p.correo === user.correo && b.dataset.v !== "admin"){ toast("No puedes quitarte a ti mismo el nivel de administrador."); return; } rol = b.dataset.v; upd(); };
+  upd();
+  $("pp-no").onclick = () => dlg.close();
+  $("pp-si").onclick = () => {
+    const n = $("pp-n").value.trim(), c = $("pp-c").value.trim().toLowerCase();
+    if (!n){ toast("Escribe el nombre."); return; }
+    if (!/^[^@\s]+@puduhue\.cl$/.test(c)){ toast("El correo debe terminar en @puduhue.cl."); return; }
+    if (personas.some((x, j) => x.correo === c && j !== i)){ toast("Esa persona ya está en la lista."); return; }
+    const ss = [...document.querySelectorAll("#pp-sw input:checked")].map(x => x.value);
+    if (rol === "enc" && !ss.length){ toast("Marca al menos una sala."); return; }
+    const np = {nombre: n, correo: c, rol, ...(rol === "enc" ? {salas: ss} : {})};
+    const nueva = personas.slice(); if (i >= 0) nueva[i] = np; else nueva.push(np);
+    $("pp-si").disabled = true;
+    guardarLista(nueva).then(() => { dlg.close(); toast(i >= 0 ? "Cambios guardados." : `${n} ya puede entrar al panel.`); renderPers(); })
+      .catch(e => { toast(e.message, 5000); $("pp-si").disabled = false; });
+  };
+}
+
+/* ================= ENTRADA ================= */
+const showSt = id => ["st-inicio", "st-demo", "st-cargando", "st-denegado"].forEach(x => $(x).hidden = x !== id);
+showSt("st-inicio");
+$("btn-login").onclick = async () => {
+  if (DEMO){ showSt("st-demo"); return; }
+  if (!msalApp){ toast("Cargando el inicio de sesión… intenta de nuevo en un momento."); return; }
+  showSt("st-cargando");
+  await msalApp.loginRedirect({scopes: ["User.Read"], prompt: "select_account"});
+};
+async function verificar(){
+  showSt("st-cargando");
+  try {
+    const j = await api("/api/admin/yo");
+    user = j.yo; salas = j.salas; personas = [];
+    await asegurar(addDays(todayStr(), -45), todayStr());
+    entrar();
+  } catch (e) {
+    if (e.code === "sin_acceso"){ $("who-no").textContent = e.data?.correo || cuenta?.username || ""; showSt("st-denegado"); }
+    else { showSt("st-inicio"); toast("No se pudo entrar: " + e.message, 6000); }
+  }
+}
+async function iniciarMsal(){
+  if (DEMO || !window.msal) return;
+  msalApp = new msal.PublicClientApplication({auth: {clientId: MS.clientId, authority: MS.authority, redirectUri: location.origin + location.pathname},
+    cache: {cacheLocation: "localStorage"}});
+  await msalApp.initialize();
+  try { const res = await msalApp.handleRedirectPromise(); cuenta = res?.account || msalApp.getAllAccounts()[0] || null; }
+  catch (e) { toast("Microsoft no completó el inicio de sesión: " + (e.errorMessage || e.message), 6000); }
+  if (cuenta){ msalApp.setActiveAccount(cuenta); verificar(); }
+}
+iniciarMsal();
+$("st-demo").onclick = async e => {
+  const v = e.target.closest("button")?.dataset.demo; if (!v) return;
+  if (v === "volver"){ showSt("st-inicio"); return; }
+  showSt("st-cargando"); await new Promise(r => setTimeout(r, 700));
+  if (v === "no"){ $("who-no").textContent = "persona.ejemplo@puduhue.cl"; showSt("st-denegado"); return; }
+  salas = salasDemo(); personas = personasDemo();
+  const correo = {admin: "b.barrientos@puduhue.cl", sup: "supervisor.ejemplo@puduhue.cl", enc: "encargado.ejemplo@puduhue.cl"}[v];
+  user = personas.find(p => p.correo === correo) || {nombre: {admin: "Benjamín Barrientos", sup: "Supervisor de ejemplo", enc: "Encargado de ejemplo"}[v], correo, rol: v, salas: ["s-radales", "s-ciruelillo"]};
+  entrar();
+};
+$("btn-otra").onclick = () => { if (DEMO || !msalApp){ showSt("st-inicio"); return; } msalApp.logoutRedirect({account: cuenta, postLogoutRedirectUri: location.origin + location.pathname}); };
+function entrar(){
+  $("v-login").hidden = true; $("v-app").hidden = false; $("demo-note").hidden = !DEMO;
+  $("u-nombre").textContent = user.nombre; $("u-rol").textContent = ROL_LBL[user.rol] + (user.rol === "enc" ? " · " + visibles().map(s => s.nombre).join(", ") : "");
+  document.querySelectorAll("[data-admin]").forEach(b => b.hidden = user.rol !== "admin");
+  $("hoy-fecha").value = todayStr(); irA("hoy");
+  hidratarFotos();
+}
+$("btn-salir").onclick = () => {
+  if (!DEMO && msalApp){ msalApp.logoutRedirect({account: cuenta, postLogoutRedirectUri: location.origin + location.pathname}); return; }
+  user = null; $("v-app").hidden = true; $("v-login").hidden = false; showSt("st-inicio"); if (dlg.open) dlg.close(); };
+$("btn-act").onclick = async () => { if (DEMO){ irA(vista); return; } DB.regs = {}; DB.meses.clear(); await asegurar(addDays(todayStr(), -45), todayStr()); irA(vista); toast("Datos actualizados."); };
+})();
+
+</script>
+</body>
+</html>
