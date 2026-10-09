@@ -1,4 +1,4 @@
-# Configuración del servidor (Cloudflare Worker). Se publica solo desde GitHub Actions.
+# Configuración del servidor (Cloudflare Worker). Se publica sola desde GitHub Actions al cambiar esta carpeta.
 name = "puduhue-lecheria"
 main = "worker.js"
 compatibility_date = "2025-09-01"
