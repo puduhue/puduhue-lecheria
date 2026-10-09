@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check List Ordeña · Puduhue</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ordeña">
+<meta name="theme-color" content="#F3F5F6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+
+/* Layout: sticky header + tab bar; single column app at phone width, two columns for summary on desktop. Stainless-steel neutrals, cold-chain blue accent. */
+:root{
+  --bg:#F3F5F6; --surface:#FFFFFF; --surface-2:#E8ECEE; --line:#D3DADE;
+  --fg:#17232B; --muted:#5A6A74; --accent:#2C4FA0; --accent-fg:#FFFFFF; --accent-soft:#DFE6F5; --brown:#5C3815; --green:#268A38;
+  --ok:#1E7A46; --ok-soft:#DDF1E4; --bad:#B3261E; --bad-soft:#F9E0DE; --na:#6B7780; --na-soft:#E6EAEC;
+  --warn:#9A6200; --warn-soft:#FBEED5;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:600}
+.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:24px;font-weight:700}
+.brand-id{display:flex;align-items:center;gap:10px}
+.brand-id img{width:44px;height:44px;border-radius:50%;background:#fff;padding:2px;flex:0 0 auto}
+.brand-id .org{font:700 12px var(--f-display);letter-spacing:.18em;color:var(--brown);display:block;line-height:1}
+.brand .code{color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:600 15px var(--f-display);letter-spacing:.03em;padding:8px 12px 10px;border-bottom:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--bad);color:var(--surface);font:600 11px/18px var(--f-body);text-align:center}
+section.view{padding-top:18px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 160px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 14px var(--f-body);border-radius:8px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.notice{border-radius:8px;padding:10px 12px;font-size:14px}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.info{background:var(--accent-soft);color:var(--fg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font:700 28px var(--f-display);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.na{background:var(--na-soft);color:var(--na)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.table-wrap{overflow-x:auto}
+table.status{width:100%;border-collapse:collapse;font-size:14px}
+table.status th,table.status td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.status th{font-weight:600}
+.slot{border:0;background:none;padding:0;cursor:pointer;font:inherit}
+.empty{color:var(--muted);text-align:center;padding:24px 12px}
+/* checklist form */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:8px;border-bottom:2px solid var(--fg)}
+.sec-head .code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:8px}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .2s}
+.item{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item-head{display:flex;gap:10px;align-items:flex-start}
+.item-head .n{flex:0 0 28px;height:28px;border-radius:6px;background:var(--surface-2);font:600 13px var(--f-mono);display:flex;align-items:center;justify-content:center}
+.item-head p{margin:3px 0 0;min-width:0}
+.item[data-state="C"] .item-head .n{background:var(--ok-soft);color:var(--ok)}
+.item[data-state="NC"] .item-head .n{background:var(--bad-soft);color:var(--bad)}
+.item[data-state="NA"] .item-head .n{background:var(--na-soft);color:var(--na)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-left:38px}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:10px 4px;font:600 14px var(--f-body);cursor:pointer}
+.seg button[data-v="C"][aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.seg button[data-v="NC"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+#f-turno button{font:700 17px var(--f-display);letter-spacing:.04em;padding:12px 4px}
+#f-turno button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg button[data-v="NA"][aria-pressed="true"]{background:var(--na);border-color:var(--na);color:var(--surface)}
+.extra{margin-left:38px;display:flex;flex-direction:column;gap:8px}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.thumb{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--surface-2)}
+.req{color:var(--bad);font-size:12.5px;font-weight:600}
+.important{border-left:4px solid var(--warn);background:var(--warn-soft);color:var(--fg);border-radius:0 8px 8px 0;padding:12px 14px;font-size:14px}
+.important ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.savebar-in{max-width:980px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.savebar .msg{font-size:13.5px;color:var(--muted);min-width:0;flex:1 1 200px}
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.li:last-child{border-bottom:0}
+.li .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.li .meta{font-size:13px;color:var(--muted)}
+.li-actions{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;max-width:calc(100% - 32px)}
+dialog{border:0;border-radius:12px;padding:0;width:min(760px,calc(100% - 24px));max-height:90vh;background:var(--surface);color:var(--fg)}
+dialog::backdrop{background:rgba(10,20,28,.55)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.dlg-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px}
+.kv div{display:flex;flex-direction:column}
+.detail-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.detail-item .t{flex:1;min-width:0}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+.salahdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.salahdr .chip{font-size:13px}
+.syncbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 0 10px}
+.syncbar .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.syncbar.pend .dot{background:var(--warn)}
+.syncbar.off .dot{background:var(--na)}
+.syncbar.err .dot{background:var(--bad)}
+.center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.center img{width:88px;height:88px}
+
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in" style="padding-bottom:0">
+    <div class="brand">
+      <div class="brand-id"><img src="logo.png" alt=""><div><span class="org">PUDUHUE</span><h1>Check List Ordeña</h1></div></div>
+      <div class="salahdr"><span class="chip ok" id="sala-chip" hidden></span><span class="mono" id="ver"></span></div>
+    </div>
+    <div class="syncbar off" id="sync"><span class="dot"></span><span id="sync-txt">Iniciando…</span><button class="btn small" id="sync-now" type="button" hidden>Subir ahora</button></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="v-noqr" class="center" hidden>
+    <img src="logo.png" alt="">
+    <h2>Escanea el QR de tu sala</h2>
+    <p style="color:var(--muted);margin:0">Abre la cámara del teléfono, apunta al código QR pegado en la sala de ordeña y toca el enlace. Si no lo tienes, pídeselo a la administración.</p>
+  </div>
+  <div id="v-msg" class="notice bad" style="margin-top:16px" hidden></div>
+
+  <section class="view" id="v-form" hidden>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="grid2">
+        <label class="field"><span class="lbl">Fecha</span><input type="date" id="f-fecha"></label>
+        <div class="field"><span class="lbl">Turno * — se completa dos veces al día</span>
+          <div class="seg" id="f-turno" style="margin:0;grid-template-columns:repeat(2,1fr)"><button type="button" data-v="AM">AM</button><button type="button" data-v="PM">PM</button></div></div>
+      </div>
+      <div class="grid2">
+        <label class="field"><span class="lbl">Nombre de quien completa *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
+        <div class="field"><span class="lbl">Hora de llenado *</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
+      </div>
+      <div class="grid2">
+        <label class="field"><span class="lbl">Área</span><input id="f-area" placeholder="Ordeña"></label>
+        <label class="field"><span class="lbl">Administrador *</span><input id="f-admin" placeholder="Nombre del administrador"></label>
+        <label class="field"><span class="lbl">Responsable</span><input id="f-resp" placeholder="Nombre del responsable"></label>
+      </div>
+      <div id="f-existing" class="notice info" hidden></div>
+    </div>
+    <div id="f-sections"></div>
+    <div class="important">
+      <strong>IMPORTANTE</strong>
+      <ul>
+        <li>Regla de responsabilidad: si la persona responsable no se encuentra trabajando, el responsable del cumplimiento es el administrador.</li>
+        <li>No forzar instrumentos eléctricos (como automáticos) en más de una oportunidad.</li>
+        <li>Hallazgos: registrar los hallazgos encontrados durante el día y hacer seguimiento en la pizarra de reuniones diarias.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<div class="savebar" id="savebar" hidden><div class="savebar-in"><span class="msg" id="save-msg"></span><button class="btn primary" id="f-save" type="button">Guardar check list</button></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const VERSION = "1";
+const SECCIONES = [
+  {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
+    "Contar con ropa de trabajo limpia y EPP respectivo.",
+    "Verificar el suministro de agua de procesos (nivel de estanques y/o funcionamiento de bombas) y bebederos.",
+    "Verificar el suministro de energía en indicadores (220 V en cada fase o 380 V, según corresponda).",
+    "Asegurar el correcto funcionamiento del equipo electrógeno (automático), de ser necesario.",
+    "Verificar el correcto aseo del o los estanques de leche fresca, según corresponda.",
+    "Poner en marcha el sistema de frío de estanques y verificar la correcta conexión de mangueras y/o válvulas.",
+    "Instalar los filtros de partículas respectivos para leche fresca.",
+    "Verificar válvula (abrir flujo) del pre-enfriador de placas para leche fresca.",
+    "Chequear temperatura del agua caliente.",
+    "Inspección visual de motores y bombas de vacío.",
+    "Inspección visual de la dosificación de alimento por puesto y del sistema de alimentación en general.",
+    "Verificar existencia suficiente de dipping."]},
+  {k:"B", t:"B. Control posterior a la ordeña", items:[
+    "Verificar correcto suministro eléctrico.",
+    "Verificar correcto suministro de agua en instalación y potreros (estanques y bombas funcionando).",
+    "Chequear temperatura del agua caliente.",
+    "Verificar existencia suficiente de químicos y detergente para equipo y estanques de leche.",
+    "Verificar tendencia de frío (temperatura de la leche en estanque).",
+    "Tomar la muestra de antibiótico respectiva.",
+    "Dejar instalaciones ordenadas.",
+    "Aseo general de sala y patio de espera."]}
+];
+const ALL_KEYS = SECCIONES.flatMap(s => s.items.map((_, i) => s.k + (i + 1)));
+const itemText = k => SECCIONES.find(s => s.k === k[0]).items[+k.slice(1) - 1];
+const ESTADO_LBL = {C:"Cumple", NC:"No cumple", NA:"N/A"};
+const MAX_EDAD_MIN = 3;
+const API = (window.LEC_CONFIG && window.LEC_CONFIG.API_URL) || (location.hostname === "localhost" ? "" : null);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtFecha = f => f ? f.split("-").reverse().join("/") : "";
+const ls = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+$("ver").textContent = "v" + VERSION;
+
+let toastT;
+function toast(m, ms = 3200){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
+
+/* ---------- IndexedDB: borradores, fotos y cola de envío ---------- */
+const idb = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open("lecheria", 1);
+    r.onupgradeneeded = () => { const d = r.result; ["drafts","fotos","outbox","kv"].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = async (store, mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(store, mode); const s = t.objectStore(store); const r = fn(s); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); };
+  return {
+    get: (st, k) => tx(st, "readonly", s => s.get(k)),
+    put: (st, k, v) => tx(st, "readwrite", s => s.put(v, k)),
+    del: (st, k) => tx(st, "readwrite", s => s.delete(k)),
+    all: async st => { const d = await open(); return new Promise((res, rej) => { const out = []; const t = d.transaction(st, "readonly"); const c = t.objectStore(st).openCursor(); c.onsuccess = () => { const cur = c.result; if (cur){ out.push({key: cur.key, value: cur.value}); cur.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); }
+  };
+})();
+
+/* ---------- clave de la sala ---------- */
+const qp = new URLSearchParams(location.search);
+let clave = qp.get("k") || ls.get("lec.k") || "";
+if (qp.get("k")) ls.set("lec.k", qp.get("k"));
+let sala = null;
+try { sala = JSON.parse(ls.get("lec.sala") || "null"); } catch {}
+if (sala && sala.clave !== clave) sala = null;
+let dispositivo = ls.get("lec.dev"); if (!dispositivo){ dispositivo = "tel-" + rid(); ls.set("lec.dev", dispositivo); }
+
+const apiUrl = (p, params = {}) => { const u = new URL(API + p, location.href); u.searchParams.set("k", clave); for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v); return u.toString(); };
+async function api(p, params, opts = {}){
+  const r = await fetch(apiUrl(p, params), opts);
+  let j = null; try { j = await r.json(); } catch {}
+  if (!r.ok){ const e = new Error((j && j.mensaje) || ("Error " + r.status)); e.status = r.status; e.code = j && j.error; throw e; }
+  return j;
+}
+
+/* ---------- estado del formulario ---------- */
+let draft = null, dirty = false, saving = false, remoto = null;
+const slotKey = (f, t) => `${f}_${t}`;
+const defaultTurno = () => new Date().getHours() < 12 ? "AM" : "PM";
+function emptyDraft(fecha, turno){
+  return { fecha, turno, completadoPor: ls.get("lec.quien") || "", horaRegistro: "", area: ls.get("lec.area") || "Ordeña",
+    administrador: ls.get("lec.admin") || "", responsable: ls.get("lec.resp") || "", items: {} };
+}
+async function persistDraft(){ if (draft) await idb.put("drafts", slotKey(draft.fecha, draft.turno), draft); }
+async function loadSlot(fecha, turno){
+  const local = await idb.get("drafts", slotKey(fecha, turno));
+  const pend = local ? null : await idb.get("outbox", slotKey(fecha, turno));
+  draft = local || (pend ? JSON.parse(JSON.stringify(pend)) : emptyDraft(fecha, turno));
+  delete draft.creado;
+  dirty = !!local; remoto = pend ? {estado: "guardado en el teléfono, pendiente de envío"} : null;
+  if (pend){ renderForm(); return; }
+  renderForm();
+  if (!local && navigator.onLine && API !== null){
+    try {
+      const j = await api("/api/registro", {fecha, turno});
+      if (j.registro && draft.fecha === fecha && draft.turno === turno && !dirty){
+        remoto = j.registro;
+        const r = j.registro;
+        draft = { fecha, turno, completadoPor: r.completadoPor || draft.completadoPor, horaRegistro: r.horaRegistro || "", area: r.area || draft.area,
+          administrador: r.administrador || draft.administrador, responsable: r.responsable || draft.responsable, items: {} };
+        for (const [k, it] of Object.entries(r.items || {})) draft.items[k] = { estado: it.estado, obs: it.obs || "", foto: it.foto || undefined };
+        renderForm();
+      }
+    } catch {}
+  }
+}
+
+/* ---------- render ---------- */
+const fotoUrls = {};
+function thumbHtml(it){
+  if (it.fotoLocal) return `<img class="thumb" alt="Foto" data-local="${esc(it.fotoLocal)}" ${fotoUrls[it.fotoLocal] ? `src="${fotoUrls[it.fotoLocal]}"` : ""}>`;
+  if (it.foto && API !== null) return `<img class="thumb" alt="Foto" loading="lazy" src="${esc(apiUrl("/api/foto", {ruta: it.foto}))}">`;
+  return "";
+}
+async function hydrate(root){
+  for (const img of root.querySelectorAll("img[data-local]")){
+    const id = img.dataset.local; if (fotoUrls[id]){ img.src = fotoUrls[id]; continue; }
+    const b = await idb.get("fotos", id); if (b){ fotoUrls[id] = URL.createObjectURL(b); img.src = fotoUrls[id]; }
+  }
+}
+function itemHtml(k){
+  const it = draft.items[k] || {};
+  const st = it.estado || "", nc = st === "NC", conFoto = st === "C" || st === "NC";
+  const tiene = it.fotoLocal || it.foto;
+  return `<div class="item" data-k="${k}" data-state="${st}">
+    <div class="item-head"><span class="n">${k.slice(1)}</span><p>${esc(itemText(k))}</p></div>
+    <div class="seg">${["C","NC","NA"].map(v => `<button type="button" data-v="${v}" aria-pressed="${st===v}">${ESTADO_LBL[v]}</button>`).join("")}</div>
+    <div class="extra" ${st ? "" : "hidden"}>
+      <textarea data-obs="${k}" placeholder="${nc ? "Describe el hallazgo (obligatorio)" : "Observación (opcional)"}">${esc(it.obs || "")}</textarea>
+      ${nc ? `<span class="req" data-reqobs="${k}" ${it.obs?.trim() ? "hidden" : ""}>Falta la observación</span>` : ""}
+      <div class="photo-row" ${conFoto ? "" : "hidden"}>
+        ${thumbHtml(it)}
+        <label class="btn small" style="cursor:pointer"><span>${tiene ? "Repetir foto" : "Tomar foto"}</span>
+          <input type="file" accept="image/*" capture="environment" data-foto="${k}" hidden></label>
+        ${conFoto && !tiene ? `<span class="req">Foto obligatoria</span>` : ""}
+      </div>
+    </div></div>`;
+}
+function renderForm(){
+  $("v-form").hidden = false; $("savebar").hidden = false;
+  $("f-fecha").value = draft.fecha;
+  document.querySelectorAll("#f-turno button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === draft.turno));
+  $("f-quien").value = draft.completadoPor || ""; $("f-hr").value = draft.horaRegistro || "";
+  $("f-area").value = draft.area || ""; $("f-admin").value = draft.administrador || ""; $("f-resp").value = draft.responsable || "";
+  const ex = $("f-existing");
+  if (remoto){ ex.hidden = false; ex.textContent = `Este check list ${draft.turno} del ${fmtFecha(draft.fecha)} ya fue enviado (${remoto.estado}). Si cambias algo y guardas, reemplaza lo enviado.`; }
+  else ex.hidden = true;
+  $("f-sections").innerHTML = SECCIONES.map(s => {
+    const done = s.items.filter((_, i) => draft.items[s.k + (i+1)]?.estado).length;
+    return `<div class="card" style="margin-bottom:16px" data-sec="${s.k}">
+      <div class="sec-head"><h2>${esc(s.t)}</h2><span class="code" data-count="${s.k}">${done}/${s.items.length}</span></div>
+      <div class="progress"><span data-prog="${s.k}" style="width:${done*100/s.items.length}%"></span></div>
+      <div>${s.items.map((_, i) => itemHtml(s.k + (i+1))).join("")}</div></div>`;
+  }).join("");
+  hydrate($("f-sections")); updateSaveMsg();
+}
+function rerenderItem(k){
+  const el = document.querySelector(`.item[data-k="${k}"]`); if (!el) return;
+  el.outerHTML = itemHtml(k);
+  const s = SECCIONES.find(x => x.k === k[0]);
+  const done = s.items.filter((_, i) => draft.items[s.k + (i+1)]?.estado).length;
+  document.querySelector(`[data-count="${s.k}"]`).textContent = `${done}/${s.items.length}`;
+  document.querySelector(`[data-prog="${s.k}"]`).style.width = (done*100/s.items.length) + "%";
+  hydrate(document.querySelector(`.item[data-k="${k}"]`)); updateSaveMsg();
+}
+function problems(){
+  return ALL_KEYS.filter(k => { const it = draft.items[k]; if (!it?.estado || it.estado === "NA") return false;
+    return !(it.fotoLocal || it.foto) || (it.estado === "NC" && !it.obs?.trim()); });
+}
+function updateSaveMsg(){
+  const n = ALL_KEYS.filter(k => draft.items[k]?.estado).length, p = problems(), msg = $("save-msg");
+  if (p.length) msg.innerHTML = `<span class="req">${p.length} ítem(s) sin foto${p.some(k => draft.items[k].estado === "NC") ? " u observación" : ""}: ${p.join(", ")}</span>`;
+  else msg.textContent = `${n}/${ALL_KEYS.length} ítems respondidos${dirty ? " · cambios sin guardar" : ""}`;
+  $("f-save").disabled = saving;
+}
+function markDirty(){ dirty = true; updateSaveMsg(); persistDraft(); }
+
+/* ---------- eventos del formulario ---------- */
+$("f-sections").addEventListener("click", e => {
+  const b = e.target.closest(".seg button"); if (!b) return;
+  const k = b.closest(".item").dataset.k;
+  const it = draft.items[k] = draft.items[k] || {};
+  it.estado = it.estado === b.dataset.v ? undefined : b.dataset.v;
+  if (!it.estado && !it.obs && !it.fotoLocal && !it.foto) delete draft.items[k];
+  markDirty(); rerenderItem(k);
+});
+$("f-sections").addEventListener("input", e => {
+  const k = e.target.dataset.obs; if (!k) return;
+  draft.items[k].obs = e.target.value; markDirty();
+  const rq = document.querySelector(`[data-reqobs="${k}"]`); if (rq) rq.hidden = !!e.target.value.trim();
+});
+$("f-sections").addEventListener("change", async e => {
+  const k = e.target.dataset.foto; if (!k || !e.target.files[0]) return;
+  const file = e.target.files[0];
+  const lbl = e.target.closest("label").querySelector("span"); lbl.textContent = "Procesando…";
+  if (!(await fotoReciente(file))){ toast(`Usa una foto tomada en este momento (máximo ${MAX_EDAD_MIN} minutos). No se aceptan fotos de la galería.`, 5000); rerenderItem(k); return; }
+  try {
+    const blob = await compress(file, `${sala ? sala.nombre : ""} · ${fmtFecha(draft.fecha)} ${draft.turno} · ítem ${k} · ${nowTime()}`);
+    const id = rid();
+    await idb.put("fotos", id, blob);
+    const it = draft.items[k];
+    it.fotoLocal = id; delete it.foto;
+    markDirty(); rerenderItem(k);
+  } catch { toast("No se pudo procesar la foto. Intenta de nuevo."); rerenderItem(k); }
+});
+$("f-turno").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.v === draft.turno) return;
+  await persistDraft(); await loadSlot(draft.fecha, b.dataset.v);
+});
+$("f-fecha").addEventListener("change", async e => {
+  const v = e.target.value; if (!v){ e.target.value = draft.fecha; return; }
+  await persistDraft(); await loadSlot(v, draft.turno);
+});
+[["f-quien","completadoPor"],["f-hr","horaRegistro"],["f-area","area"],["f-admin","administrador"],["f-resp","responsable"]].forEach(([id, f]) =>
+  $(id).addEventListener("input", e => { draft[f] = e.target.value; markDirty(); }));
+$("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.horaRegistro = $("f-hr").value; markDirty(); };
+
+/* ---------- fotos ---------- */
+async function exifFecha(file){
+  try {
+    const buf = new DataView(await file.slice(0, 131072).arrayBuffer());
+    if (buf.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while (o + 4 < buf.byteLength){
+      const m = buf.getUint16(o), len = buf.getUint16(o + 2);
+      if (m === 0xFFE1 && buf.getUint32(o + 4) === 0x45786966){
+        const t = o + 10, le = buf.getUint16(t) === 0x4949;
+        const u16 = x => buf.getUint16(x, le), u32 = x => buf.getUint32(x, le);
+        const readStr = (off, n) => { let r = ""; for (let i = 0; i < n - 1 && off + i < buf.byteLength; i++) r += String.fromCharCode(buf.getUint8(off + i)); return r; };
+        let found = null, exifIfd = null;
+        const scan = ifd => { const n = u16(t + ifd); for (let i = 0; i < n; i++){ const e = t + ifd + 2 + i * 12; const tag = u16(e);
+          if (tag === 0x8769) exifIfd = u32(e + 8);
+          if (tag === 0x9003 || (tag === 0x0132 && !found)) found = readStr(t + u32(e + 8), u32(e + 4)); } };
+        scan(u32(t + 4)); if (exifIfd) scan(exifIfd);
+        const mm = found && found.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+        return mm ? new Date(+mm[1], mm[2] - 1, +mm[3], +mm[4], +mm[5], +mm[6]) : null;
+      }
+      if ((m & 0xFF00) !== 0xFF00) break;
+      o += 2 + len;
+    }
+  } catch {}
+  return null;
+}
+async function fotoReciente(file){
+  const lim = MAX_EDAD_MIN * 60000, now = Date.now();
+  if (file.lastModified && now - file.lastModified > lim) return false;
+  const ex = await exifFecha(file);
+  if (ex && Math.abs(now - ex.getTime()) > lim + 60000) return false;
+  return true;
+}
+async function compress(file, marca){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    let max = 1400, q = 0.74, out;
+    for (let tries = 0; tries < 6; tries++){
+      const sc = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0, c.width, c.height);
+      if (marca){ const fs = Math.max(12, Math.round(c.width / 42)); g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, c.height - fs * 1.9, c.width, fs * 1.9);
+        g.fillStyle = "#fff"; g.font = `600 ${fs}px system-ui, sans-serif`; g.textBaseline = "middle"; g.fillText(marca, fs * 0.6, c.height - fs * 0.95, c.width - fs * 1.2); }
+      out = await new Promise(r => c.toBlob(r, "image/jpeg", q));
+      if (out.size < 400000) break;
+      max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.06);
+    }
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* ---------- guardar y cola de envío ---------- */
+$("f-save").onclick = async () => {
+  if (saving) return;
+  const p = problems();
+  if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
+  if (!draft.completadoPor?.trim()){ toast("Escribe el nombre de quien completa el check list."); $("f-quien").focus(); return; }
+  if (!draft.horaRegistro){ toast("Indica la hora de llenado."); $("f-hr").focus(); return; }
+  if (!draft.administrador?.trim()){ toast("Indica el nombre del administrador."); $("f-admin").focus(); return; }
+  if (!ALL_KEYS.some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
+  saving = true; $("f-save").disabled = true; $("f-save").textContent = "Guardando…";
+  try {
+    const job = JSON.parse(JSON.stringify(draft));
+    job.creado = Date.now();
+    await idb.put("outbox", slotKey(draft.fecha, draft.turno), job);
+    await idb.del("drafts", slotKey(draft.fecha, draft.turno));
+    ls.set("lec.quien", draft.completadoPor.trim()); ls.set("lec.admin", draft.administrador.trim()); ls.set("lec.resp", (draft.responsable || "").trim()); ls.set("lec.area", (draft.area || "").trim());
+    dirty = false;
+    $("f-save").textContent = "Subiendo…";
+    const ok = await trySync();
+    const n = ALL_KEYS.filter(k => draft.items[k]?.estado).length;
+    if (ok) toast(n === ALL_KEYS.length ? "Check list guardado y enviado." : "Avance enviado. Puedes completarlo más tarde.");
+    else toast("Guardado en este teléfono. Se enviará solo cuando vuelva la señal.", 4500);
+    remoto = ok ? {estado: n === ALL_KEYS.length ? "completo" : "parcial"} : remoto;
+    renderForm();
+  } catch { toast("No se pudo guardar. Intenta de nuevo."); }
+  finally { saving = false; $("f-save").textContent = "Guardar check list"; updateSaveMsg(); }
+};
+
+let syncing = false, lastErr = null;
+async function trySync(){
+  if (syncing || API === null || !clave) { await renderSync(); return false; }
+  syncing = true; lastErr = null; await renderSync();
+  let todoOk = true;
+  try {
+    const jobs = (await idb.all("outbox")).sort((a, b) => a.value.creado - b.value.creado);
+    for (const {key, value: job} of jobs){
+      for (const [k, it] of Object.entries(job.items)){
+        if (!it.fotoLocal) continue;
+        const blob = await idb.get("fotos", it.fotoLocal);
+        if (!blob){ delete it.fotoLocal; continue; }
+        const j = await api("/api/foto", {fecha: job.fecha, turno: job.turno, item: k, id: it.fotoLocal}, {method: "POST", body: blob, headers: {"Content-Type": "image/jpeg"}});
+        const old = it.fotoLocal; it.foto = j.ruta; delete it.fotoLocal;
+        await idb.put("outbox", key, job);
+        await idb.del("fotos", old);
+        if (draft && draft.fecha === job.fecha && draft.turno === job.turno && draft.items[k]?.fotoLocal === old){ draft.items[k].foto = j.ruta; delete draft.items[k].fotoLocal; }
+      }
+      const items = {};
+      for (const [k, it] of Object.entries(job.items)) if (it.estado) items[k] = {estado: it.estado, obs: it.obs || "", ...(it.foto ? {foto: it.foto} : {})};
+      await api("/api/registro", {}, {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({fecha: job.fecha, turno: job.turno, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
+          administrador: job.administrador, responsable: job.responsable, items, dispositivo})});
+      await idb.del("outbox", key);
+    }
+  } catch (e) {
+    todoOk = false; lastErr = e;
+    if (e.code === "clave") showMsg(e.message);
+  } finally { syncing = false; await renderSync(); }
+  return todoOk;
+}
+async function renderSync(){
+  const n = (await idb.all("outbox")).length, el = $("sync"), t = $("sync-txt");
+  el.className = "syncbar";
+  $("sync-now").hidden = !n || syncing;
+  if (API === null){ el.classList.add("err"); t.textContent = "Servidor no configurado todavía."; return; }
+  if (syncing){ el.classList.add("pend"); t.textContent = "Enviando…"; return; }
+  if (!navigator.onLine){ el.classList.add("off"); t.textContent = n ? `Sin señal · ${n} check list(s) por enviar` : "Sin señal · lo que guardes se enviará después"; return; }
+  if (n){ el.classList.add(lastErr ? "err" : "pend"); t.textContent = `${n} check list(s) por enviar` + (lastErr ? " · reintentando" : ""); return; }
+  t.textContent = "Todo enviado";
+}
+$("sync-now").onclick = () => trySync();
+window.addEventListener("online", () => trySync());
+window.addEventListener("offline", () => renderSync());
+setInterval(() => { if (navigator.onLine) trySync(); }, 60000);
+
+function showMsg(m){ const v = $("v-msg"); v.textContent = m; v.hidden = !m; }
+
+/* ---------- inicio ---------- */
+async function start(){
+  if (!clave){ $("v-noqr").hidden = false; renderSync(); return; }
+  if (sala){ $("sala-chip").hidden = false; $("sala-chip").textContent = "Sala " + sala.nombre; }
+  if (API !== null && navigator.onLine){
+    try {
+      const j = await api("/api/sala");
+      sala = {...j.sala, clave}; ls.set("lec.sala", JSON.stringify(sala));
+      $("sala-chip").hidden = false; $("sala-chip").textContent = "Sala " + sala.nombre; showMsg("");
+    } catch (e) {
+      if (e.code === "clave"){ showMsg(e.message); ls.set("lec.sala", ""); sala = null; $("sala-chip").hidden = true; renderSync(); return; }
+    }
+  }
+  if (!sala && API !== null){ showMsg("Necesitas señal la primera vez para validar el QR de la sala."); renderSync(); return; }
+  await loadSlot(todayStr(), defaultTurno());
+  trySync();
+}
+start();
+
+if ("serviceWorker" in navigator && location.protocol === "https:"){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", async () => { if (reloading) return; reloading = true; await persistDraft(); location.reload(); });
+}
+})();
+</script>
+</body>
+</html>
