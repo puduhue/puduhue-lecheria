@@ -216,6 +216,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
         <li>Hallazgos: registrar los hallazgos encontrados durante el día y hacer seguimiento en la pizarra de reuniones diarias.</li>
       </ul>
     </div>
+    <p style="text-align:center;margin:8px 0 0" id="link-admin"><a href="panel/" style="color:var(--muted);font-size:12.5px">Acceso administración</a></p>
   </section>
 </div>
 
@@ -224,7 +225,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 
 <script>
 (() => {
-const VERSION = "5";
+const VERSION = "6";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -662,6 +663,7 @@ function showMsg(m){ const v = $("v-msg"); v.textContent = m; v.hidden = !m; }
 /* ---------- inicio ---------- */
 async function start(){
   if (DEMO){
+    $("link-admin").hidden = true;
     $("demo-bar").hidden = false;
     if (!clave || !clave.startsWith("demo-")){
       $("v-demo").hidden = false; $("demo-cambiar").hidden = true;
