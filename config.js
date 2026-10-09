@@ -1,2 +1,2 @@
-/* Dirección del servidor (Cloudflare Worker). Se completa cuando el servidor esté creado. */
-window.LEC_CONFIG = { API_URL: "" };
+/* Dirección del servidor (Cloudflare Worker). */
+window.LEC_CONFIG = { API_URL: "https://puduhue-lecheria.benjaminbarrientoscardenas.workers.dev" };
