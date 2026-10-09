@@ -141,6 +141,8 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 .syncbar.err .dot{background:var(--bad)}
 .center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
 .center img{width:88px;height:88px}
+.tema-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:36px;height:36px;padding:0;font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
 input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;line-height:1.3;text-align:left;background:var(--surface)}
 input::-webkit-date-and-time-value{text-align:left;margin:0}
 .hr-row{display:flex;gap:8px;align-items:stretch;min-width:0}
@@ -251,14 +253,46 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 .rep-table .chip{padding:2px 8px}.rep-table .chip::before{display:none}
 .rep-table th,.rep-table td{padding:7px 4px}
 
+/* mapa de cumplimiento */
+table.mapa{border-collapse:separate;border-spacing:4px;font-size:12px}
+table.mapa th{font-weight:600;color:var(--muted);text-align:center;line-height:1.15;padding:2px;white-space:nowrap}
+table.mapa th.mp-hoy{color:var(--accent)}
+table.mapa .mp-sala{position:sticky;left:0;background:var(--surface);text-align:left;color:var(--fg);font-size:13.5px;padding-right:8px;z-index:1}
+table.mapa td{padding:0;text-align:center}
+.mp{position:relative;width:46px;height:40px;border-radius:8px;border:0;font:700 14px var(--f-display);cursor:pointer;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.mp i{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:var(--bad);color:#fff;font:700 10.5px/17px var(--f-body);font-style:normal;padding:0 4px;box-shadow:0 0 0 2px var(--surface)}
+.mp.c4,.mpl.c4{background:#1E7A46;color:#fff}
+.mp.c3,.mpl.c3{background:#7CC495;color:#0F3A21}
+.mp.c2,.mpl.c2{background:#F2C14E;color:#4A3400}
+.mp.c1,.mpl.c1{background:#D9534F;color:#fff}
+.mp.na,.mpl.na{background:var(--surface-2);color:var(--na)}
+.mp.hoy,.mpl.hoy{outline:2px dashed var(--accent);outline-offset:1px}
+.mpl{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-left:6px}
+.legend .mpl:first-of-type{margin-left:0}
+.mp-hint{display:none}
+@media (max-width:640px){.mp-hint{display:block;margin-bottom:4px}}
+
+/* columna de salas fija: tapa por completo lo que pasa por detrás al deslizar */
+table.mapa{border-spacing:0}
+table.mapa th,table.mapa td{padding:3px}
+table.mapa .mp-sala{z-index:3;padding:3px 10px 3px 2px;box-shadow:8px 0 8px -6px rgba(0,0,0,.35)}
+table.mapa thead .mp-sala{z-index:4}
+.mp{z-index:0}
+table.mapa td:nth-child(2){padding-left:8px}
+table.mapa tbody .mp-sala,table.mapa thead .mp-sala{border-right:1px solid var(--line)}
+
+.tema-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:36px;height:36px;padding:0;font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
 </style>
 <script src="../config.js"></script>
+<script>try{var t=localStorage.getItem("lec.tema");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
 <script src="msal-browser.min.js"></script>
 </head>
 <body>
 <!-- ================= ENTRADA ================= -->
 <main class="login" id="v-login">
-  <div class="login-card">
+  <div class="login-card" style="position:relative">
+    <button class="tema-btn" type="button" data-tema style="position:absolute;top:12px;right:12px"></button>
     <img class="logo" src="../logo.png" alt="">
     <div><span class="org">PUDUHUE</span><h1>Panel de Ordeña</h1></div>
     <p class="sub">Seguimiento de los check lists de las salas de ordeña: estado del día, hallazgos, historial e informes.</p>
@@ -290,7 +324,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
   <div class="top-in">
     <div class="brand">
       <div class="brand-id"><img src="../logo.png" alt=""><div><span class="org">PUDUHUE</span><h1>Panel de Ordeña</h1></div></div>
-      <div class="userbox"><span>👤 <b id="u-nombre"></b></span><span class="chip na" id="u-rol"></span><button class="btn small" id="btn-act" type="button" title="Volver a cargar los datos">↻ Actualizar</button><button class="btn small" id="btn-salir" type="button">Salir</button></div>
+      <div class="userbox"><span>👤 <b id="u-nombre"></b></span><span class="chip na" id="u-rol"></span><button class="tema-btn" type="button" data-tema></button><button class="btn small" id="btn-act" type="button" title="Volver a cargar los datos">↻ Actualizar</button><button class="btn small" id="btn-salir" type="button">Salir</button></div>
     </div>
     <nav class="tabs" id="tabs">
       <button type="button" data-v="hoy" aria-selected="true">Hoy</button>
@@ -333,7 +367,7 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
 
   <!-- HISTORIAL -->
   <section class="view" id="v-hist" hidden>
-    <div class="intro"><span class="ic">🗂️</span><span>Todos los check lists enviados. Usa los filtros para buscar por sala o por fechas, y toca una fila para ver el detalle con fotos.</span></div>
+    <div class="intro"><span class="ic">🗂️</span><span>Primero ves el <b>mapa de cumplimiento</b> de cada sala día a día, y abajo todos los check lists enviados. Usa los filtros para cambiar las salas o las fechas.</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="filters">
         <label class="field"><span class="lbl">Sala</span><select id="r-sala"></select></label>
@@ -343,7 +377,8 @@ input::-webkit-date-and-time-value{text-align:left;margin:0}
       </div>
       <div class="row" style="justify-content:space-between;align-items:center"><span class="sub" id="r-count"></span><button class="btn small" id="r-xlsx" type="button">⬇ Descargar Excel</button></div>
     </div>
-    <div class="card"><div id="r-list"></div></div>
+    <div class="card" id="r-mapa"></div>
+    <div class="card"><h3 style="margin-bottom:6px">Check lists</h3><div id="r-list"></div></div>
   </section>
 
   <!-- INFORMES -->
@@ -708,12 +743,59 @@ function dlgCerrar(h){
 }
 
 /* ================= HISTORIAL ================= */
+/* Cumplimiento del día de una sala: de los 40 ítems que corresponden (20 en AM y 20 en PM),
+   cuántos quedaron bien (Cumple o N/A). Un control que no se hizo cuenta como no cumplido.
+   Hoy solo se consideran los controles ya enviados. */
+function diaSala(salaId, f){
+  const hoy = f === todayStr();
+  let bien = 0, esperado = 0, nc = 0, hechos = 0, partes = 0;
+  for (const t of ["AM", "PM"]){ const r = registro(salaId, f, t);
+    for (const S of ["A", "B"]){
+      const enviada = !!r?.partes?.[S];
+      if (hoy && !enviada) continue;
+      partes++; if (enviada) hechos++;
+      for (const k of secKeys(S)){ esperado++; const it = r?.items?.[k]; if (it && it.estado !== "NC") bien++; if (it?.estado === "NC") nc++; }
+    } }
+  if (!esperado) return {pct: null, nc: 0, hechos: 0, partes: 0, hoy};
+  return {pct: Math.round(bien * 100 / esperado), nc, hechos, partes, hoy};
+}
+const colorPct = p => p === null ? "na" : p >= 95 ? "c4" : p >= 85 ? "c3" : p >= 70 ? "c2" : "c1";
+function renderMapa(){
+  let hasta = $("r-hasta").value, desde = $("r-desde").value, nota = "";
+  if (diasEntre(desde, hasta) > 30){ desde = addDays(hasta, -30); nota = `<span class="sub" style="font-size:12.5px">Se muestran los últimos 31 días del rango elegido.</span>`; }
+  const dias = []; for (let f = desde; f <= hasta; f = addDays(f, 1)) dias.push(f);
+  const vs = visibles().filter(s => !$("r-sala").value || s.id === $("r-sala").value);
+  const head = `<tr><th class="mp-sala">Sala</th>${dias.map(f => `<th class="${f === todayStr() ? "mp-hoy" : ""}">${DIAS[parseF(f).getDay()].slice(0, 2)}<br>${fmtCorta(f)}</th>`).join("")}<th>Prom.</th></tr>`;
+  const filas = vs.map(s => {
+    const ps = [];
+    const celdas = dias.map(f => { const d = diaSala(s.id, f); if (d.pct !== null && !d.hoy) ps.push(d.pct);
+      const tit = d.pct === null ? `${s.nombre} · ${fmtFecha(f)}: sin controles enviados todavía` : `${s.nombre} · ${fmtFecha(f)}: ${d.pct}% · ${d.hechos} de ${d.partes} controles${d.nc ? ` · ${d.nc} hallazgo(s)` : ""}`;
+      return `<td><button type="button" class="mp ${colorPct(d.pct)} ${d.hoy ? "hoy" : ""}" data-s="${s.id}" data-f="${f}" title="${esc(tit)}" aria-label="${esc(tit)}">${d.pct === null ? "·" : d.pct}${d.nc ? `<i>${d.nc}</i>` : ""}</button></td>`; }).join("");
+    const prom = ps.length ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length) : null;
+    return `<tr><th class="mp-sala">${esc(s.nombre)}</th>${celdas}<td><b class="pct">${pctTxt(prom)}</b></td></tr>`;
+  }).join("");
+  $("r-mapa").innerHTML = `<div class="row" style="justify-content:space-between;align-items:baseline"><h3>Cumplimiento por sala y día</h3>${nota}</div>
+    <p class="sub" style="font-size:13.5px;margin:4px 0 10px">Cada cuadro es un día de una sala. El número es el <b>% de ítems que quedaron bien</b> en sus 4 controles (un control no hecho cuenta como no cumplido). La esquina roja indica cuántos hallazgos hubo. Toca un cuadro para ver el detalle.</p>
+    <span class="sub mp-hint" style="font-size:12.5px">Desliza la tabla hacia el lado para ver todos los días →</span>
+    <div class="table-wrap"><table class="mapa"><thead>${head}</thead><tbody>${filas}</tbody></table></div>
+    <div class="legend" style="margin-top:10px"><span class="mpl c4"></span>95–100%<span class="mpl c3"></span>85–94%<span class="mpl c2"></span>70–84%<span class="mpl c1"></span>menos de 70%<span class="mpl na"></span>sin datos<span class="mpl hoy na"></span>hoy (en curso)</div>`;
+}
+function verDia(salaId, f){
+  const s = salaById(salaId), d = diaSala(salaId, f);
+  const fila = t => { const r = registro(salaId, f, t);
+    return `<div class="li"><div class="body"><b>Turno ${t}</b><div class="row" style="gap:6px">${["A", "B"].map(S => { const i = slotInfo(r, S, f); return `<span class="chip ${i.cls}">${PARTE_CORTO[S]}: ${i.txt}</span>`; }).join("")}</div></div>
+      ${r ? `<button class="btn small" type="button" data-turno="${t}">Ver check list</button>` : ""}</div>`; };
+  abrir(`Sala ${s.nombre} · ${nombreDia(f)}`, `<div class="kv"><div><span class="lbl">Cumplimiento del día</span><b class="pct" style="font-size:22px">${pctTxt(d.pct)}</b></div><div><span class="lbl">Controles enviados</span>${d.hechos} de ${d.hoy ? d.partes + " (hasta ahora)" : 4}</div><div><span class="lbl">Hallazgos</span>${d.nc}</div></div>
+    <div class="list">${fila("AM")}${fila("PM")}</div>`);
+  $("dlg-b").onclick = e => { const b = e.target.closest("[data-turno]"); if (b) verDetalle(registro(salaId, f, b.dataset.turno)); };
+}
 function filtradosHist(){ return registrosRango($("r-desde").value, $("r-hasta").value, $("r-sala").value, $("r-turno").value); }
 function renderHist(){
   salaOptions($("r-sala"));
   if (!$("r-hasta").value) $("r-hasta").value = todayStr();
   if (!$("r-desde").value) $("r-desde").value = addDays(todayStr(), -6);
   if ($("r-desde").value > $("r-hasta").value) $("r-desde").value = $("r-hasta").value;
+  renderMapa();
   const l = filtradosHist();
   const all = {}; l.forEach(r => Object.entries(r.items).forEach(([k, v]) => all[r.id + k] = v));
   $("r-count").innerHTML = `<b>${l.length}</b> check list${l.length !== 1 ? "s" : ""} · cumplimiento promedio <b>${pctTxt(cumplimiento(all))}</b>`;
@@ -725,6 +807,7 @@ function renderHist(){
       <span>${nc ? `<span class="chip bad">${nc} hallazgo${nc > 1 ? "s" : ""}</span>` : `<span class="pct">${pctTxt(cumplimiento(r.items))}</span>`}</span></div>`; }).join("")
     : `<div class="empty">No hay check lists con estos filtros.</div>`;
   $("r-list").onclick = e => { const row = e.target.closest(".hist-row"); if (row) verDetalle(l[+row.dataset.i]); };
+  $("r-mapa").onclick = e => { const b = e.target.closest(".mp"); if (b) verDia(b.dataset.s, b.dataset.f); };
 }
 ["r-sala","r-desde","r-hasta","r-turno"].forEach(id => $(id).onchange = () => conDatos($("r-desde").value || todayStr(), $("r-hasta").value || todayStr(), renderHist));
 
@@ -965,6 +1048,16 @@ $("btn-salir").onclick = () => {
   if (!DEMO && msalApp){ msalApp.logoutRedirect({account: cuenta, postLogoutRedirectUri: location.origin + location.pathname}); return; }
   user = null; $("v-app").hidden = true; $("v-login").hidden = false; showSt("st-inicio"); if (dlg.open) dlg.close(); };
 $("btn-act").onclick = async () => { if (DEMO){ irA(vista); return; } DB.regs = {}; DB.meses.clear(); await asegurar(addDays(todayStr(), -45), todayStr()); irA(vista); toast("Datos actualizados."); };
+})();
+
+/* ---------- modo claro / oscuro ---------- */
+(() => {
+  const btns = document.querySelectorAll("[data-tema]");
+  const actual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const pintar = () => btns.forEach(b => { const d = actual() === "dark"; b.textContent = d ? "☀️" : "🌙"; b.title = d ? "Cambiar a modo claro" : "Cambiar a modo oscuro"; b.setAttribute("aria-label", b.title); });
+  btns.forEach(b => b.onclick = () => { const n = actual() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("lec.tema", n); } catch {} pintar(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", pintar);
+  pintar();
 })();
 
 </script>
