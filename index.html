@@ -145,6 +145,11 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 .syncbar.err .dot{background:var(--bad)}
 .center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
 .center img{width:88px;height:88px}
+.seg.partes{margin:0;grid-template-columns:1fr 1fr}
+.seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
+.seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
+.seg.partes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg.partes button[aria-pressed="true"] .chip{background:var(--surface);}
 
 </style>
 <script src="config.js"></script>
@@ -161,6 +166,12 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 </header>
 
 <div class="wrap">
+  <div id="demo-bar" class="notice warn" style="margin-top:16px" hidden><b>Vista previa · modo demostración.</b> Lo que guardes aquí queda solo en este navegador y no llega a OneDrive. <button class="btn small" id="demo-cambiar" type="button" style="margin-left:6px">Cambiar sala</button></div>
+  <div id="v-demo" class="center" hidden>
+    <h2>Elige una sala para probar</h2>
+    <p style="color:var(--muted);margin:0">En la app real, cada ordeñador entra escaneando el QR de su sala.</p>
+    <div class="row" id="demo-salas" style="justify-content:center;gap:8px"></div>
+  </div>
   <div id="v-noqr" class="center" hidden>
     <img src="logo.png" alt="">
     <h2>Escanea el QR de tu sala</h2>
@@ -175,16 +186,20 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
         <div class="field"><span class="lbl">Turno * — se completa dos veces al día</span>
           <div class="seg" id="f-turno" style="margin:0;grid-template-columns:repeat(2,1fr)"><button type="button" data-v="AM">AM</button><button type="button" data-v="PM">PM</button></div></div>
       </div>
+      <div class="field" style="gap:6px;flex:none"><span class="lbl">Parte del check list</span>
+        <div class="seg partes" id="f-parte"><button type="button" data-v="A"></button><button type="button" data-v="B"></button></div></div>
+      <div id="f-existing" class="notice info" hidden></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="grid2">
-        <label class="field"><span class="lbl">Nombre de quien completa *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
-        <div class="field"><span class="lbl">Hora de llenado *</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
+        <label class="field"><span class="lbl" id="f-quien-lbl">Nombre de quien completa *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
+        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado *</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
       </div>
       <div class="grid2">
         <label class="field"><span class="lbl">Área</span><input id="f-area" placeholder="Ordeña"></label>
         <label class="field"><span class="lbl">Administrador *</span><input id="f-admin" placeholder="Nombre del administrador"></label>
         <label class="field"><span class="lbl">Responsable</span><input id="f-resp" placeholder="Nombre del responsable"></label>
       </div>
-      <div id="f-existing" class="notice info" hidden></div>
     </div>
     <div id="f-sections"></div>
     <div class="important">
@@ -203,7 +218,7 @@ dialog::backdrop{background:rgba(10,20,28,.55)}
 
 <script>
 (() => {
-const VERSION = "2";
+const VERSION = "4";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -232,7 +247,9 @@ const ALL_KEYS = SECCIONES.flatMap(s => s.items.map((_, i) => s.k + (i + 1)));
 const itemText = k => SECCIONES.find(s => s.k === k[0]).items[+k.slice(1) - 1];
 const ESTADO_LBL = {C:"Cumple", NC:"No cumple", NA:"N/A"};
 const MAX_EDAD_MIN = 3;
-const API = (window.LEC_CONFIG && window.LEC_CONFIG.API_URL) || (location.hostname === "localhost" ? "" : null);
+const DEMO = !!(window.LEC_CONFIG && window.LEC_CONFIG.DEMO);
+const API = DEMO ? "" : ((window.LEC_CONFIG && window.LEC_CONFIG.API_URL) || (location.hostname === "localhost" ? "" : null));
+const DEMO_SALAS = ["Cadenasso","Tradicional","Rotativa","Mi Tierra","Bellavista","Casa Anita","Radales","Ciruelillo"].map(n => ({id: "s-" + n.toLowerCase().replace(/ /g, ""), nombre: n, predio: ""}));
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -276,39 +293,89 @@ let dispositivo = ls.get("lec.dev"); if (!dispositivo){ dispositivo = "tel-" + r
 
 const apiUrl = (p, params = {}) => { const u = new URL(API + p, location.href); u.searchParams.set("k", clave); for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v); return u.toString(); };
 async function api(p, params, opts = {}){
+  if (DEMO) return demoApi(p, params || {}, opts);
   const r = await fetch(apiUrl(p, params), opts);
   let j = null; try { j = await r.json(); } catch {}
   if (!r.ok){ const e = new Error((j && j.mensaje) || ("Error " + r.status)); e.status = r.status; e.code = j && j.error; throw e; }
   return j;
 }
 
+/* ---------- modo demostración (vista previa en Claude): todo queda en este navegador ---------- */
+async function demoApi(p, params, opts){
+  const s = DEMO_SALAS.find(x => "demo-" + x.id === clave);
+  if (!s){ const e = new Error("Sala de demostración no válida."); e.code = "clave"; throw e; }
+  await new Promise(r => setTimeout(r, 250));
+  const m = (opts.method || "GET").toUpperCase();
+  if (p === "/api/sala") return {sala: s, hoy: todayStr()};
+  if (p === "/api/registro" && m === "GET") return {registro: (await idb.get("kv", `reg_${s.id}_${params.fecha}_${params.turno}`)) || null};
+  if (p === "/api/foto" && m === "POST"){ await idb.put("kv", "foto_" + params.id, opts.body); return {ok: true, ruta: "demo/" + params.id}; }
+  if (p === "/api/registro" && m === "POST"){
+    const d = JSON.parse(opts.body), key = `reg_${s.id}_${d.fecha}_${d.turno}`, prev = await idb.get("kv", key);
+    const items = {};
+    for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== d.parte) items[k] = it;
+    for (const [k, it] of Object.entries(d.items)) if (k[0] === d.parte) items[k] = it;
+    const ahora = new Date().toISOString();
+    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: d.horaRegistro, actualizadoEn: ahora}};
+    const doc = {id: `${s.id}_${d.fecha}_${d.turno}`, salaId: s.id, sala: s.nombre, predio: "", fecha: d.fecha, turno: d.turno,
+      area: d.area || prev?.area || "", administrador: d.administrador || prev?.administrador || "", responsable: d.responsable || prev?.responsable || "",
+      partes, items, seguimiento: prev?.seguimiento || {}, creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora};
+    const n = ALL_KEYS.filter(k => items[k]).length;
+    doc.estado = n === ALL_KEYS.length ? "completo" : n ? "parcial" : "vacío";
+    await idb.put("kv", key, doc); return {ok: true, estado: doc.estado};
+  }
+  throw new Error("Ruta no disponible en demostración.");
+}
+
 /* ---------- estado del formulario ---------- */
-let draft = null, dirty = false, saving = false, remoto = null;
+let draft = null, saving = false, remoto = null;
 const slotKey = (f, t) => `${f}_${t}`;
+const secKeys = S => ALL_KEYS.filter(k => k[0] === S);
+const PARTE_LBL = {A: "Antes de ordeñar", B: "Después de ordeñar"};
 const defaultTurno = () => new Date().getHours() < 12 ? "AM" : "PM";
 function emptyDraft(fecha, turno){
-  return { fecha, turno, completadoPor: ls.get("lec.quien") || "", horaRegistro: "", area: ls.get("lec.area") || "Ordeña",
-    administrador: ls.get("lec.admin") || "", responsable: ls.get("lec.resp") || "", items: {} };
+  const q = ls.get("lec.quien") || "";
+  return { fecha, turno, parte: null, area: ls.get("lec.area") || "Ordeña", administrador: ls.get("lec.admin") || "", responsable: ls.get("lec.resp") || "",
+    partes: {A: {completadoPor: q, horaRegistro: ""}, B: {completadoPor: q, horaRegistro: ""}}, items: {}, mod: {A: false, B: false}, est: {A: null, B: null} };
 }
+function parteInfo(S){
+  const tot = secKeys(S).length, n = secKeys(S).filter(k => draft.items[k]?.estado).length;
+  if (draft.mod[S]) return {txt: `${n}/${tot} · sin guardar`, cls: "warn"};
+  if (draft.est[S] === "pendiente") return {txt: `${n}/${tot} · por enviar`, cls: "warn"};
+  if (draft.est[S] === "enviado") return n === tot ? {txt: "Completa", cls: "ok"} : {txt: `${n}/${tot} · incompleta`, cls: "warn"};
+  return n ? {txt: `${n}/${tot}`, cls: "warn"} : {txt: "Pendiente", cls: "na"};
+}
+function sugerirParte(){ return secKeys("A").every(k => draft.items[k]?.estado) && draft.est.A ? "B" : "A"; }
 async function persistDraft(){ if (draft) await idb.put("drafts", slotKey(draft.fecha, draft.turno), draft); }
-async function loadSlot(fecha, turno){
-  const local = await idb.get("drafts", slotKey(fecha, turno));
-  const pend = local ? null : await idb.get("outbox", slotKey(fecha, turno));
-  draft = local || (pend ? JSON.parse(JSON.stringify(pend)) : emptyDraft(fecha, turno));
-  delete draft.creado;
-  dirty = !!local; remoto = pend ? {estado: "guardado en el teléfono, pendiente de envío"} : null;
-  if (pend){ renderForm(); return; }
-  renderForm();
-  if (!local && navigator.onLine && API !== null){
+async function patchDraft(fecha, turno, fn){
+  if (draft && draft.fecha === fecha && draft.turno === turno){ fn(draft); await persistDraft(); return true; }
+  const d = await idb.get("drafts", slotKey(fecha, turno)); if (d){ fn(d); await idb.put("drafts", slotKey(fecha, turno), d); }
+  return false;
+}
+function mergeRemoto(r){
+  for (const S of ["A", "B"]){
+    if (draft.mod[S] || draft.est[S] === "pendiente") continue;
+    if (!secKeys(S).some(k => r.items?.[k])) continue;
+    secKeys(S).forEach(k => { const it = r.items[k]; if (it) draft.items[k] = {estado: it.estado, obs: it.obs || "", foto: it.foto || undefined}; else delete draft.items[k]; });
+    const pm = r.partes?.[S] || (!r.partes && r.completadoPor ? r : null);
+    if (pm) draft.partes[S] = {completadoPor: pm.completadoPor || "", horaRegistro: pm.horaRegistro || ""};
+    draft.est[S] = "enviado";
+  }
+  if (!draft.mod.A && !draft.mod.B) ["area", "administrador", "responsable"].forEach(f => { if (r[f]) draft[f] = r[f]; });
+}
+async function loadSlot(fecha, turno, parte){
+  draft = (await idb.get("drafts", slotKey(fecha, turno))) || emptyDraft(fecha, turno);
+  draft.mod = draft.mod || {A: false, B: false}; draft.est = draft.est || {A: null, B: null};
+  draft.partes = draft.partes || {A: {completadoPor: "", horaRegistro: ""}, B: {completadoPor: "", horaRegistro: ""}};
+  for (const S of ["A", "B"]) if (await idb.get("outbox", `${slotKey(fecha, turno)}_${S}`)) draft.est[S] = "pendiente";
+  draft.parte = parte || sugerirParte();
+  remoto = null; renderForm();
+  if (navigator.onLine && API !== null){
     try {
       const j = await api("/api/registro", {fecha, turno});
-      if (j.registro && draft.fecha === fecha && draft.turno === turno && !dirty){
-        remoto = j.registro;
-        const r = j.registro;
-        draft = { fecha, turno, completadoPor: r.completadoPor || draft.completadoPor, horaRegistro: r.horaRegistro || "", area: r.area || draft.area,
-          administrador: r.administrador || draft.administrador, responsable: r.responsable || draft.responsable, items: {} };
-        for (const [k, it] of Object.entries(r.items || {})) draft.items[k] = { estado: it.estado, obs: it.obs || "", foto: it.foto || undefined };
-        renderForm();
+      if (j.registro && draft.fecha === fecha && draft.turno === turno){
+        remoto = j.registro; mergeRemoto(j.registro);
+        if (!parte && !draft.mod.A && !draft.mod.B) draft.parte = sugerirParte();
+        await persistDraft(); renderForm();
       }
     } catch {}
   }
@@ -318,6 +385,7 @@ async function loadSlot(fecha, turno){
 const fotoUrls = {};
 function thumbHtml(it){
   if (it.fotoLocal) return `<img class="thumb" alt="Foto" data-local="${esc(it.fotoLocal)}" ${fotoUrls[it.fotoLocal] ? `src="${fotoUrls[it.fotoLocal]}"` : ""}>`;
+  if (it.foto && it.foto.startsWith("demo/")) return `<img class="thumb" alt="Foto" data-demo="${esc(it.foto.slice(5))}">`;
   if (it.foto && API !== null) return `<img class="thumb" alt="Foto" loading="lazy" src="${esc(apiUrl("/api/foto", {ruta: it.foto}))}">`;
   return "";
 }
@@ -325,6 +393,10 @@ async function hydrate(root){
   for (const img of root.querySelectorAll("img[data-local]")){
     const id = img.dataset.local; if (fotoUrls[id]){ img.src = fotoUrls[id]; continue; }
     const b = await idb.get("fotos", id); if (b){ fotoUrls[id] = URL.createObjectURL(b); img.src = fotoUrls[id]; }
+  }
+  for (const img of root.querySelectorAll("img[data-demo]")){
+    const id = "d" + img.dataset.demo; if (!fotoUrls[id]){ const b = await idb.get("kv", "foto_" + img.dataset.demo); if (b) fotoUrls[id] = URL.createObjectURL(b); }
+    if (fotoUrls[id]) img.src = fotoUrls[id];
   }
 }
 function itemHtml(k){
@@ -345,16 +417,30 @@ function itemHtml(k){
       </div>
     </div></div>`;
 }
+function renderPartes(){
+  document.querySelectorAll("#f-parte button").forEach(b => {
+    const S = b.dataset.v, inf = parteInfo(S);
+    b.setAttribute("aria-pressed", S === draft.parte);
+    b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${inf.txt}</span>`;
+  });
+  $("f-quien-lbl").textContent = `Nombre de quien completa «${PARTE_LBL[draft.parte]}» *`;
+  $("f-hr-lbl").textContent = `Hora de llenado de esta parte *`;
+  $("f-save").textContent = draft.parte === "A" ? "Guardar · Antes" : "Guardar · Después";
+}
 function renderForm(){
   $("v-form").hidden = false; $("savebar").hidden = false;
   $("f-fecha").value = draft.fecha;
   document.querySelectorAll("#f-turno button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === draft.turno));
-  $("f-quien").value = draft.completadoPor || ""; $("f-hr").value = draft.horaRegistro || "";
+  const P = draft.partes[draft.parte];
+  $("f-quien").value = P.completadoPor || ""; $("f-hr").value = P.horaRegistro || "";
   $("f-area").value = draft.area || ""; $("f-admin").value = draft.administrador || ""; $("f-resp").value = draft.responsable || "";
-  const ex = $("f-existing");
-  if (remoto){ ex.hidden = false; ex.textContent = `Este check list ${draft.turno} del ${fmtFecha(draft.fecha)} ya fue enviado (${remoto.estado}). Si cambias algo y guardas, reemplaza lo enviado.`; }
+  renderPartes();
+  const ex = $("f-existing"), est = draft.est[draft.parte];
+  if (draft.mod[draft.parte] && est) { ex.hidden = false; ex.textContent = `Estás modificando «${PARTE_LBL[draft.parte]}». Al guardar, reemplaza lo ${est === "pendiente" ? "guardado" : DEMO ? "guardado" : "enviado"} antes.`; }
+  else if (est === "pendiente"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» está guardada en este teléfono y se enviará cuando haya señal.`; }
+  else if (est === "enviado"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» ya fue ${DEMO ? "guardada" : "enviada"}. Si cambias algo y guardas, reemplaza lo anterior.`; }
   else ex.hidden = true;
-  $("f-sections").innerHTML = SECCIONES.map(s => {
+  $("f-sections").innerHTML = SECCIONES.filter(s => s.k === draft.parte).map(s => {
     const done = s.items.filter((_, i) => draft.items[s.k + (i+1)]?.estado).length;
     return `<div class="card" style="margin-bottom:16px" data-sec="${s.k}">
       <div class="sec-head"><h2>${esc(s.t)}</h2><span class="code" data-count="${s.k}">${done}/${s.items.length}</span></div>
@@ -373,16 +459,17 @@ function rerenderItem(k){
   hydrate(document.querySelector(`.item[data-k="${k}"]`)); updateSaveMsg();
 }
 function problems(){
-  return ALL_KEYS.filter(k => { const it = draft.items[k]; if (!it?.estado || it.estado === "NA") return false;
+  return secKeys(draft.parte).filter(k => { const it = draft.items[k]; if (!it?.estado || it.estado === "NA") return false;
     return !(it.fotoLocal || it.foto) || (it.estado === "NC" && !it.obs?.trim()); });
 }
 function updateSaveMsg(){
-  const n = ALL_KEYS.filter(k => draft.items[k]?.estado).length, p = problems(), msg = $("save-msg");
+  const S = draft.parte, n = secKeys(S).filter(k => draft.items[k]?.estado).length, p = problems(), msg = $("save-msg");
   if (p.length) msg.innerHTML = `<span class="req">${p.length} ítem(s) sin foto${p.some(k => draft.items[k].estado === "NC") ? " u observación" : ""}: ${p.join(", ")}</span>`;
-  else msg.textContent = `${n}/${ALL_KEYS.length} ítems respondidos${dirty ? " · cambios sin guardar" : ""}`;
+  else msg.textContent = `${PARTE_LBL[S]}: ${n}/${secKeys(S).length} ítems${draft.mod[S] ? " · cambios sin guardar" : ""}`;
   $("f-save").disabled = saving;
+  renderPartes();
 }
-function markDirty(){ dirty = true; updateSaveMsg(); persistDraft(); }
+function markDirty(){ draft.mod[draft.parte] = true; updateSaveMsg(); persistDraft(); }
 
 /* ---------- eventos del formulario ---------- */
 $("f-sections").addEventListener("click", e => {
@@ -412,6 +499,11 @@ $("f-sections").addEventListener("change", async e => {
     markDirty(); rerenderItem(k);
   } catch { toast("No se pudo procesar la foto. Intenta de nuevo."); rerenderItem(k); }
 });
+$("f-parte").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.v === draft.parte) return;
+  draft.parte = b.dataset.v; await persistDraft(); renderForm();
+  $("f-parte").scrollIntoView({block: "start", behavior: "smooth"});
+});
 $("f-turno").addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b || b.dataset.v === draft.turno) return;
   await persistDraft(); await loadSlot(draft.fecha, b.dataset.v);
@@ -420,9 +512,11 @@ $("f-fecha").addEventListener("change", async e => {
   const v = e.target.value; if (!v){ e.target.value = draft.fecha; return; }
   await persistDraft(); await loadSlot(v, draft.turno);
 });
-[["f-quien","completadoPor"],["f-hr","horaRegistro"],["f-area","area"],["f-admin","administrador"],["f-resp","responsable"]].forEach(([id, f]) =>
+$("f-quien").addEventListener("input", e => { draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
+$("f-hr").addEventListener("input", e => { draft.partes[draft.parte].horaRegistro = e.target.value; markDirty(); });
+[["f-area","area"],["f-admin","administrador"],["f-resp","responsable"]].forEach(([id, f]) =>
   $(id).addEventListener("input", e => { draft[f] = e.target.value; markDirty(); }));
-$("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.horaRegistro = $("f-hr").value; markDirty(); };
+$("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.partes[draft.parte].horaRegistro = $("f-hr").value; markDirty(); };
 
 /* ---------- fotos ---------- */
 async function exifFecha(file){
@@ -479,36 +573,40 @@ async function compress(file, marca){
 /* ---------- guardar y cola de envío ---------- */
 $("f-save").onclick = async () => {
   if (saving) return;
+  const S = draft.parte, P = draft.partes[S];
   const p = problems();
   if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
-  if (!draft.completadoPor?.trim()){ toast("Escribe el nombre de quien completa el check list."); $("f-quien").focus(); return; }
-  if (!draft.horaRegistro){ toast("Indica la hora de llenado."); $("f-hr").focus(); return; }
+  if (!P.completadoPor?.trim()){ toast("Escribe el nombre de quien completa esta parte."); $("f-quien").focus(); return; }
+  if (!P.horaRegistro){ toast("Indica la hora de llenado."); $("f-hr").focus(); return; }
   if (!draft.administrador?.trim()){ toast("Indica el nombre del administrador."); $("f-admin").focus(); return; }
-  if (!ALL_KEYS.some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
+  if (!secKeys(S).some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
   saving = true; $("f-save").disabled = true; $("f-save").textContent = "Guardando…";
   try {
-    const job = JSON.parse(JSON.stringify(draft));
-    job.creado = Date.now();
-    await idb.put("outbox", slotKey(draft.fecha, draft.turno), job);
-    await idb.del("drafts", slotKey(draft.fecha, draft.turno));
-    ls.set("lec.quien", draft.completadoPor.trim()); ls.set("lec.admin", draft.administrador.trim()); ls.set("lec.resp", (draft.responsable || "").trim()); ls.set("lec.area", (draft.area || "").trim());
-    dirty = false;
-    $("f-save").textContent = "Subiendo…";
+    const items = {};
+    secKeys(S).forEach(k => { if (draft.items[k]?.estado) items[k] = JSON.parse(JSON.stringify(draft.items[k])); });
+    const job = { fecha: draft.fecha, turno: draft.turno, parte: S, area: draft.area || "", administrador: draft.administrador.trim(), responsable: (draft.responsable || "").trim(),
+      completadoPor: P.completadoPor.trim(), horaRegistro: P.horaRegistro, items, creado: Date.now() };
+    await idb.put("outbox", `${slotKey(draft.fecha, draft.turno)}_${S}`, job);
+    draft.mod[S] = false; draft.est[S] = "pendiente"; await persistDraft();
+    ls.set("lec.quien", job.completadoPor); ls.set("lec.admin", job.administrador); ls.set("lec.resp", job.responsable); ls.set("lec.area", job.area);
+    $("f-save").textContent = "Enviando…";
     const ok = await trySync();
-    const n = ALL_KEYS.filter(k => draft.items[k]?.estado).length;
-    if (ok) toast(n === ALL_KEYS.length ? "Check list guardado y enviado." : "Avance enviado. Puedes completarlo más tarde.");
-    else toast("Guardado en este teléfono. Se enviará solo cuando vuelva la señal.", 4500);
-    remoto = ok ? {estado: n === ALL_KEYS.length ? "completo" : "parcial"} : remoto;
+    const completa = secKeys(S).every(k => draft.items[k]?.estado);
+    const verbo = DEMO ? "guardada" : "enviada";
+    if (!ok) toast("Guardado en este teléfono. Se enviará solo cuando vuelva la señal.", 4500);
+    else if (S === "A" && completa) toast(`«Antes de ordeñar» ${verbo}. Al terminar la ordeña, completa «Después de ordeñar».`, 5000);
+    else if (S === "B" && completa) toast(`«Después de ordeñar» ${verbo}.${secKeys("A").every(k => draft.items[k]?.estado) ? " Turno completo." : " Falta completar «Antes de ordeñar»."}`, 5000);
+    else toast(`Avance ${verbo}. Puedes completarlo más tarde.`);
     renderForm();
   } catch { toast("No se pudo guardar. Intenta de nuevo."); }
-  finally { saving = false; $("f-save").textContent = "Guardar check list"; updateSaveMsg(); }
+  finally { saving = false; updateSaveMsg(); }
 };
 
 let syncing = false, lastErr = null;
 async function trySync(){
   if (syncing || API === null || !clave) { await renderSync(); return false; }
   syncing = true; lastErr = null; await renderSync();
-  let todoOk = true;
+  let todoOk = true, tocaActual = false;
   try {
     const jobs = (await idb.all("outbox")).sort((a, b) => a.value.creado - b.value.creado);
     for (const {key, value: job} of jobs){
@@ -519,20 +617,21 @@ async function trySync(){
         const j = await api("/api/foto", {fecha: job.fecha, turno: job.turno, item: k, id: it.fotoLocal}, {method: "POST", body: blob, headers: {"Content-Type": "image/jpeg"}});
         const old = it.fotoLocal; it.foto = j.ruta; delete it.fotoLocal;
         await idb.put("outbox", key, job);
+        await patchDraft(job.fecha, job.turno, d => { if (d.items[k]?.fotoLocal === old){ d.items[k].foto = j.ruta; delete d.items[k].fotoLocal; } });
         await idb.del("fotos", old);
-        if (draft && draft.fecha === job.fecha && draft.turno === job.turno && draft.items[k]?.fotoLocal === old){ draft.items[k].foto = j.ruta; delete draft.items[k].fotoLocal; }
       }
       const items = {};
       for (const [k, it] of Object.entries(job.items)) if (it.estado) items[k] = {estado: it.estado, obs: it.obs || "", ...(it.foto ? {foto: it.foto} : {})};
       await api("/api/registro", {}, {method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({fecha: job.fecha, turno: job.turno, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
+        body: JSON.stringify({fecha: job.fecha, turno: job.turno, parte: job.parte, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
           administrador: job.administrador, responsable: job.responsable, items, dispositivo})});
       await idb.del("outbox", key);
+      if (await patchDraft(job.fecha, job.turno, d => { if (d.est[job.parte] === "pendiente") d.est[job.parte] = "enviado"; })) tocaActual = true;
     }
   } catch (e) {
     todoOk = false; lastErr = e;
     if (e.code === "clave") showMsg(e.message);
-  } finally { syncing = false; await renderSync(); }
+  } finally { syncing = false; await renderSync(); if (tocaActual && draft && !saving) renderForm(); }
   return todoOk;
 }
 async function renderSync(){
@@ -540,12 +639,14 @@ async function renderSync(){
   el.className = "syncbar";
   $("sync-now").hidden = !n || syncing;
   if (API === null){ el.classList.add("err"); t.textContent = "Servidor no configurado todavía."; return; }
+  if (DEMO && !syncing){ t.textContent = n ? `${n} check list(s) por guardar` : "Modo demostración · guardado en este navegador"; if (n) el.classList.add("pend"); return; }
   if (syncing){ el.classList.add("pend"); t.textContent = "Enviando…"; return; }
   if (!navigator.onLine){ el.classList.add("off"); t.textContent = n ? `Sin señal · ${n} check list(s) por enviar` : "Sin señal · lo que guardes se enviará después"; return; }
   if (n){ el.classList.add(lastErr ? "err" : "pend"); t.textContent = `${n} check list(s) por enviar` + (lastErr ? " · reintentando" : ""); return; }
   t.textContent = "Todo enviado";
 }
 $("sync-now").onclick = () => trySync();
+$("demo-cambiar").onclick = async () => { if (draft) await persistDraft(); clave = ""; ls.set("lec.k", ""); location.reload(); };
 window.addEventListener("online", () => trySync());
 window.addEventListener("offline", () => renderSync());
 setInterval(() => { if (navigator.onLine) trySync(); }, 60000);
@@ -554,6 +655,15 @@ function showMsg(m){ const v = $("v-msg"); v.textContent = m; v.hidden = !m; }
 
 /* ---------- inicio ---------- */
 async function start(){
+  if (DEMO){
+    $("demo-bar").hidden = false;
+    if (!clave || !clave.startsWith("demo-")){
+      $("v-demo").hidden = false; $("demo-cambiar").hidden = true;
+      $("demo-salas").innerHTML = DEMO_SALAS.map(s => `<button class="btn" type="button" data-s="${s.id}">${esc(s.nombre)}</button>`).join("");
+      $("demo-salas").onclick = e => { const b = e.target.closest("button"); if (!b) return; clave = "demo-" + b.dataset.s; ls.set("lec.k", clave); ls.set("lec.sala", ""); sala = null; $("v-demo").hidden = true; start(); };
+      renderSync(); return;
+    }
+  }
   if (!clave){ $("v-noqr").hidden = false; renderSync(); return; }
   if (sala){ $("sala-chip").hidden = false; $("sala-chip").textContent = "Sala " + sala.nombre; }
   if (API !== null && navigator.onLine){
@@ -571,7 +681,7 @@ async function start(){
 }
 start();
 
-if ("serviceWorker" in navigator && location.protocol === "https:"){
+if (!DEMO && "serviceWorker" in navigator && location.protocol === "https:"){
   navigator.serviceWorker.register("sw.js").catch(() => {});
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", async () => { if (reloading) return; reloading = true; await persistDraft(); location.reload(); });
