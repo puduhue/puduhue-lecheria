@@ -156,6 +156,24 @@ function validarFechaTurno(fecha, turno) {
   return null;
 }
 
+/* ---------- reglas de edición ----------
+   Una parte enviada solo la puede modificar el mismo teléfono y solo el mismo día.
+   Fuera de eso queda cerrada, salvo que un administrador la habilite para corregir (24 horas). */
+const desbloqueada = (r, S) => { const d = r?.desbloqueo?.[S]; return !!d && Date.parse(d.hasta) > Date.now(); };
+function motivoBloqueo(r, S, dispositivo, fecha) {
+  const p = r?.partes?.[S];
+  if (!p || desbloqueada(r, S)) return null;
+  if (!dispositivo || p.dispositivo !== dispositivo) return { error: "bloqueado", mensaje: `Esta parte ya la envió ${p.completadoPor || "otra persona"}${p.horaRegistro ? " a las " + p.horaRegistro : ""} desde otro teléfono. Solo esa persona puede modificarla.` };
+  if (fecha !== hoyChile()) return { error: "cerrado", mensaje: "Este check list es de un día anterior y ya está cerrado. Si hay que corregir algo, pídelo a la administración." };
+  return null;
+}
+function vistaOrdenador(r, dispositivo) {
+  if (!r) return null;
+  const partes = {};
+  for (const [S, p] of Object.entries(r.partes || {})) partes[S] = { completadoPor: p.completadoPor, horaRegistro: p.horaRegistro, actualizadoEn: p.actualizadoEn, ediciones: p.ediciones || 0, esTuyo: !!dispositivo && p.dispositivo === dispositivo, desbloqueada: desbloqueada(r, S) };
+  return { id: r.id, fecha: r.fecha, turno: r.turno, administrador: r.administrador, partes, items: r.items, estado: r.estado, estadoPartes: r.estadoPartes };
+}
+
 /* ---------- panel de administración ---------- */
 const ROLES = ["admin", "sup", "enc"];
 const mesesEntre = (desde, hasta) => { const out = []; let [y, m] = desde.split("-").map(Number); const [yh, mh] = hasta.split("-").map(Number);
@@ -233,6 +251,24 @@ async function handleAdmin(req, env, h, url, path) {
 
   if (!esAdmin) return json({ error: "permiso", mensaje: "Solo un administrador puede hacer esto." }, 403, h);
 
+  if (req.method === "POST" && path === "/api/admin/desbloquear") {
+    let d; try { d = await req.json(); } catch { return json({ error: "datos" }, 400, h); }
+    const sala = salas.find(s => s.id === d.salaId);
+    if (!sala || !/^\d{4}-\d{2}-\d{2}$/.test(d.fecha || "") || !["AM", "PM"].includes(d.turno) || !["A", "B"].includes(d.parte)) return json({ error: "datos", mensaje: "Datos inválidos." }, 400, h);
+    const motivo = limpiar(d.motivo, 300);
+    if (!motivo) return json({ error: "datos", mensaje: "Indica el motivo de la corrección." }, 400, h);
+    let des;
+    await actualizarJson(env, rutaMes(sala.id, d.fecha.slice(0, 7)), m => {
+      const r = m?.registros?.[`${d.fecha}_${d.turno}`];
+      if (!r?.partes?.[d.parte]) { const e = new Error("Esa parte no se ha enviado."); e.status = 404; throw e; }
+      des = { hasta: new Date(Date.now() + 24 * 3600000).toISOString(), por: yo.nombre, correo: yo.correo, motivo, en: new Date().toISOString() };
+      r.desbloqueo = r.desbloqueo || {}; r.desbloqueo[d.parte] = des;
+      r.correcciones = (r.correcciones || []).concat([{ parte: d.parte, ...des }]);
+      return m;
+    });
+    return json({ ok: true, desbloqueo: des }, 200, h);
+  }
+
   if (req.method === "POST" && path === "/api/admin/salas") {
     let d; try { d = await req.json(); } catch { return json({ error: "datos" }, 400, h); }
     const clave = () => { const b = crypto.getRandomValues(new Uint8Array(12)); return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
@@ -291,7 +327,7 @@ async function handle(req, env, h) {
     const e = validarFechaTurno(fecha, turno); if (e) return json({ error: "datos", mensaje: e }, 400, h);
     const r = await gGet(env, rutaMes(sala.id, fecha.slice(0, 7)));
     const m = r ? await r.json() : null;
-    return json({ registro: m?.registros?.[`${fecha}_${turno}`] || null }, 200, h);
+    return json({ registro: vistaOrdenador(m?.registros?.[`${fecha}_${turno}`], url.searchParams.get("dispositivo")), hoy: hoyChile() }, 200, h);
   }
 
   if (req.method === "GET" && path === "/api/foto") {
@@ -339,12 +375,21 @@ async function handle(req, env, h) {
     await actualizarJson(env, rutaMes(sala.id, d.fecha.slice(0, 7)), mesDoc => {
     mesDoc = mesDoc || { salaId: sala.id, mes: d.fecha.slice(0, 7), registros: {} };
     const prev = mesDoc.registros[`${d.fecha}_${d.turno}`] || null;
+    const bl = motivoBloqueo(prev, parte, limpiar(d.dispositivo, 40), d.fecha);
+    if (bl) { const e = new Error(bl.mensaje); e.status = 409; e.code = bl.error; throw e; }
     const ahora = new Date().toISOString();
     // Cada parte (A = antes, B = después) se guarda por separado: se conserva la otra parte tal como estaba.
     const items = {};
     for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== parte && ALL_KEYS.includes(k)) items[k] = it;
     Object.assign(items, nuevos);
     const partes = { ...(prev?.partes || {}) };
+    // Historial: antes de reemplazar una parte se guarda la versión anterior, para que nada se pierda.
+    const historial = (prev?.historial || []).slice(-30);
+    if (prev?.partes?.[parte]) {
+      const pp = prev.partes[parte];
+      historial.push({ parte, guardadoEn: pp.actualizadoEn, completadoPor: pp.completadoPor, horaRegistro: pp.horaRegistro, dispositivo: pp.dispositivo,
+        items: Object.fromEntries(Object.entries(prev.items || {}).filter(([k]) => k[0] === parte)) });
+    }
     partes[parte] = {
       completadoPor: limpiar(d.completadoPor, 80),
       horaRegistro: /^\d{2}:\d{2}$/.test(d.horaRegistro || "") ? d.horaRegistro : "",
@@ -358,8 +403,9 @@ async function handle(req, env, h) {
       area: limpiar(d.area, 60) || prev?.area || "",
       administrador: limpiar(d.administrador, 80) || prev?.administrador || "",
       responsable: limpiar(d.responsable, 80) || prev?.responsable || "",
-      partes, items,
+      partes, items, historial,
       seguimiento: prev?.seguimiento || {},
+      ...(prev?.desbloqueo ? { desbloqueo: prev.desbloqueo } : {}),
       creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora,
       version: "CL-LEC-01 v02",
     };
@@ -384,7 +430,7 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
     try { return await handle(req, env, h); }
     catch (e) {
-      if (e.status) return json({ error: "datos", mensaje: e.message }, e.status, h);
+      if (e.status) return json({ error: e.code || "datos", mensaje: e.message }, e.status, h);
       return json({ error: "servidor", mensaje: "Error del servidor. Intenta de nuevo en unos minutos.", detalle: String(e.message || e).slice(0, 200) }, 502, h);
     }
   },
