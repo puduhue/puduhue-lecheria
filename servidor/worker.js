@@ -51,6 +51,10 @@ function hoyChile() {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   return p; // YYYY-MM-DD
 }
+/* Hora de Chile (HH:MM), por si un teléfono no la envía. */
+function horaChile() {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+}
 function difDias(a, b) { return Math.round((Date.parse(a + "T12:00:00Z") - Date.parse(b + "T12:00:00Z")) / 86400000); }
 
 function cors(req, env) {
@@ -392,7 +396,8 @@ async function handle(req, env, h) {
     }
     partes[parte] = {
       completadoPor: limpiar(d.completadoPor, 80),
-      horaRegistro: /^\d{2}:\d{2}$/.test(d.horaRegistro || "") ? d.horaRegistro : "",
+      // La hora de llenado queda fija desde el primer envío de esta parte: las correcciones no la cambian.
+      horaRegistro: prev?.partes?.[parte]?.horaRegistro || (/^\d{2}:\d{2}$/.test(d.horaRegistro || "") ? d.horaRegistro : horaChile()),
       actualizadoEn: ahora, dispositivo: limpiar(d.dispositivo, 40),
       ediciones: (prev?.partes?.[parte]?.ediciones ?? -1) + 1,
     };

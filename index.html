@@ -210,7 +210,7 @@ input:disabled,button:disabled{opacity:.6}
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="grid2">
         <label class="field"><span class="lbl" id="f-quien-lbl">Responsable (quien completa) *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
-        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado *</span><div class="hr-row"><input type="time" id="f-hr"><button class="btn small" type="button" id="f-now">Ahora</button></div></div>
+        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado (automática)</span><div class="fijo" id="f-hr">Se registra sola al guardar</div></div>
       </div>
       <div class="grid2">
         <label class="field"><span class="lbl">Administrador *</span><input id="f-admin" placeholder="Nombre del administrador"></label>
@@ -235,7 +235,7 @@ input:disabled,button:disabled{opacity:.6}
 
 <script>
 (() => {
-const VERSION = "8";
+const VERSION = "9";
 const SECCIONES = [
   {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
     "Contar con ropa de trabajo limpia y EPP respectivo.",
@@ -339,7 +339,7 @@ async function demoApi(p, params, opts){
     for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== d.parte) items[k] = it;
     for (const [k, it] of Object.entries(d.items)) if (k[0] === d.parte) items[k] = it;
     const ahora = new Date().toISOString();
-    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: d.horaRegistro, actualizadoEn: ahora, dispositivo: d.dispositivo}};
+    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: pp?.horaRegistro || d.horaRegistro, actualizadoEn: ahora, dispositivo: d.dispositivo}};
     const doc = {id: `${s.id}_${d.fecha}_${d.turno}`, salaId: s.id, sala: s.nombre, predio: "", fecha: d.fecha, turno: d.turno,
       area: d.area || prev?.area || "", administrador: d.administrador || prev?.administrador || "", responsable: d.responsable || prev?.responsable || "",
       partes, items, seguimiento: prev?.seguimiento || {}, creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora};
@@ -484,10 +484,10 @@ function renderPartes(){
     b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${bl ? "🔒 " : ""}${inf.txt}</span>${enviada && p?.completadoPor ? `<span class="quien">${esc(p.completadoPor)}${p.horaRegistro ? " · " + esc(p.horaRegistro) : ""}</span>` : ""}`;
   });
   $("f-quien-lbl").textContent = `Responsable de «${PARTE_LBL[draft.parte]}» (quien completa) *`;
-  $("f-hr-lbl").textContent = `Hora de llenado *`;
+  $("f-hr-lbl").textContent = "Hora de llenado (automática)";
   $("f-save").textContent = draft.parte === "A" ? "Guardar · Antes" : "Guardar · Después";
   const bloq = ro();
-  ["f-quien", "f-hr", "f-now", "f-admin"].forEach(id => $(id).disabled = bloq);
+  ["f-quien", "f-admin"].forEach(id => $(id).disabled = bloq);
   $("f-save").hidden = bloq;
 }
 function renderForm(){
@@ -495,7 +495,7 @@ function renderForm(){
   $("f-fecha").value = draft.fecha;
   document.querySelectorAll("#f-turno button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === draft.turno));
   const P = draft.partes[draft.parte];
-  $("f-quien").value = P.completadoPor || ""; $("f-hr").value = P.horaRegistro || "";
+  $("f-quien").value = P.completadoPor || ""; $("f-hr").textContent = P.horaRegistro && draft.est[draft.parte] ? P.horaRegistro : "Se registra sola al guardar";
   $("f-admin").value = draft.administrador || "";
   renderPartes();
   const ex = $("f-existing"), est = draft.est[draft.parte], bl = bloqueo(draft.parte);
@@ -582,9 +582,7 @@ $("f-fecha").addEventListener("change", async e => {
   await persistDraft(); await loadSlot(v, draft.turno);
 });
 $("f-quien").addEventListener("input", e => { if (ro()) return; draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
-$("f-hr").addEventListener("input", e => { if (ro()) return; draft.partes[draft.parte].horaRegistro = e.target.value; markDirty(); });
 $("f-admin").addEventListener("input", e => { if (ro()) return; draft.administrador = e.target.value; markDirty(); });
-$("f-now").onclick = () => { $("f-hr").value = nowTime(); draft.partes[draft.parte].horaRegistro = $("f-hr").value; markDirty(); };
 
 /* ---------- fotos ---------- */
 async function exifFecha(file){
@@ -645,10 +643,11 @@ $("f-save").onclick = async () => {
   const p = problems();
   if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
   if (!P.completadoPor?.trim()){ toast("Escribe el nombre del responsable (quien completa)."); $("f-quien").focus(); return; }
-  if (!P.horaRegistro){ toast("Indica la hora de llenado."); $("f-hr").focus(); return; }
   if (!draft.administrador?.trim()){ toast("Indica el nombre del administrador."); $("f-admin").focus(); return; }
   if (!secKeys(S).some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
   saving = true; $("f-save").disabled = true; $("f-save").textContent = "Guardando…";
+  /* La hora de llenado la pone la app al guardar por primera vez esta parte y después no cambia (las correcciones la conservan). */
+  if (!P.horaRegistro || !draft.est[S]) P.horaRegistro = nowTime();
   try {
     const items = {};
     secKeys(S).forEach(k => { if (draft.items[k]?.estado) items[k] = JSON.parse(JSON.stringify(draft.items[k])); });
