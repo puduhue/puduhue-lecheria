@@ -295,6 +295,26 @@ table.mapa tbody .mp-sala,table.mapa thead .mp-sala{border-right:1px solid var(-
 .cambios ul{margin:4px 0 8px;padding-left:18px}
 .cambio{border-left:3px solid var(--line);padding-left:10px;margin-top:6px}
 
+/* v11: computador y todos los navegadores — mismo alto en todos los campos, listas desplegables iguales en Chrome, Edge, Safari y Firefox, y realce al pasar el mouse */
+html{scrollbar-gutter:stable}
+:root{--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%235A6A74' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2393A3AD' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}}
+:root[data-theme="dark"]{--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2393A3AD' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),select,.fijo{height:44px;min-height:44px}
+:root select:not([multiple]):not([size]){-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:var(--chev);background-repeat:no-repeat;background-position:right 10px center;background-size:16px 16px;padding-right:34px;text-overflow:ellipsis}
+input[type="date"],input[type="time"]{-webkit-appearance:auto;appearance:auto}
+@supports (-webkit-touch-callout:none){input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none}}
+@media (hover:hover) and (pointer:fine){
+  .btn,.seg button,.slot,nav.tabs button,.tema-btn{transition:background-color .12s,border-color .12s,box-shadow .12s,filter .12s,color .12s}
+  .btn:not(:disabled):not(.primary):hover{background:var(--surface-2)}
+  .btn.primary:not(:disabled):hover{filter:brightness(1.08)}
+  .seg button:not([aria-pressed="true"]):not(:disabled):hover{border-color:var(--accent)}
+  .slot:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(16,40,64,.1)}
+  nav.tabs button:not([aria-selected="true"]):hover{color:var(--fg)}
+  .tema-btn:hover{background:var(--surface-2)}
+}
+/* panel: en pantallas grandes usa más ancho para que se lean los nombres completos */
+@media (min-width:1280px){.wrap,.top-in{max-width:1200px}}
 </style>
 <script src="../config.js"></script>
 <script>try{var t=localStorage.getItem("lec.tema");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
