@@ -395,9 +395,9 @@ table.mapa tbody .mp-sala,table.mapa thead .mp-sala{border-right:1px solid var(-
 
   <!-- INFORMES -->
   <section class="view" id="v-inf" hidden>
-    <div class="intro"><span class="ic">📄</span><span>El <b>informe del día</b> junta los check lists de todas las salas: qué se hizo, el porcentaje de cumplimiento y los hallazgos con sus fotos. Elige la fecha y descárgalo en PDF o Excel.</span></div>
+    <div class="intro"><span class="ic">📄</span><span>El <b>informe del día</b> muestra qué se hizo, el porcentaje de cumplimiento y los hallazgos con sus fotos. Elige la fecha y si lo quieres <b>consolidado</b> (todos los campos) o de <b>un campo</b>, y descárgalo en PDF o Excel. El informe de un campo trae además el detalle ítem por ítem.</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
-      <div class="datebar"><label class="field" style="flex:0 1 200px"><span class="lbl">Fecha del informe</span><input type="date" id="i-fecha"></label></div>
+      <div class="datebar"><label class="field" style="flex:0 1 200px"><span class="lbl">Fecha del informe</span><input type="date" id="i-fecha"></label><label class="field" style="flex:0 1 240px"><span class="lbl">Campo</span><select id="i-campo"></select></label></div>
       <div class="li-actions"><button class="btn primary" id="i-pdf" type="button">⬇ Descargar PDF</button><button class="btn" id="i-xlsx" type="button">⬇ Descargar Excel</button></div>
     </div>
     <div class="card" id="i-prev"></div>
@@ -878,8 +878,15 @@ function renderHist(){
 ["r-sala","r-desde","r-hasta","r-turno"].forEach(id => $(id).onchange = () => conDatos($("r-desde").value || todayStr(), $("r-hasta").value || todayStr(), renderHist));
 
 /* ================= INFORMES ================= */
+function infSalas(){ const id = $("i-campo").value; return id ? visibles().filter(s => s.id === id) : visibles(); }
+function infSala(){ const id = $("i-campo").value; return id ? salaById(id) : null; }
+const nombreArchivo = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+const infNombre = (f, ext) => { const s = infSala(); return `Informe_Ordena_${s ? nombreArchivo(s.nombre) : "Consolidado"}_${f}.${ext}`; };
+const RES_TXT = {C: "Cumple", NC: "No cumple", NA: "N/A"};
+/* Detalle ítem por ítem de un campo: una fila por ítem con el resultado AM y PM. */
+function detalleCampo(x){ return SECCIONES.map(sec => ({sec, filas: secKeys(sec.k).map(k => ({k, n: +k.slice(1), txt: itemText(k), AM: x.regs.AM?.items[k] || null, PM: x.regs.PM?.items[k] || null}))})); }
 function datosDia(f){
-  return visibles().map(s => {
+  return infSalas().map(s => {
     const regs = {AM: registro(s.id, f, "AM"), PM: registro(s.id, f, "PM")};
     const slots = SLOTS.map(([t, S]) => slotInfo(regs[t], S, f));
     const items = {}; ["AM", "PM"].forEach(t => regs[t] && Object.entries(regs[t].items).forEach(([k, v]) => items[t + k] = v));
@@ -887,21 +894,34 @@ function datosDia(f){
     return {s, regs, slots, pct: cumplimiento(items), hall};
   });
 }
+function campoOptions(){
+  const sel = $("i-campo"), v = sel.value, vs = visibles();
+  sel.innerHTML = (vs.length > 1 ? `<option value="">${user.rol === "enc" ? "Mis campos" : "Todos los campos"} (consolidado)</option>` : "") + vs.map(s => `<option value="${s.id}">${esc(s.nombre)}</option>`).join("");
+  if ([...sel.options].some(o => o.value === v)) sel.value = v;
+}
 function renderInf(){
+  campoOptions();
   if (!$("i-fecha").value) $("i-fecha").value = todayStr();
-  const f = $("i-fecha").value, d = datosDia(f);
+  const f = $("i-fecha").value, d = datosDia(f), uno = infSala();
+  const chipRes = it => it ? `<span class="chip ${{C: "ok", NC: "bad", NA: "na"}[it.estado]}">${{C: "✓", NC: "✕", NA: "N/A"}[it.estado]}</span>` : `<span class="sub">—</span>`;
+  const detalle = uno && d[0] ? `<h3 style="margin-top:16px">Detalle del check list</h3>
+    ${detalleCampo(d[0]).map(g => `<div class="table-wrap" style="margin-top:8px"><table class="rep-table"><thead><tr><th colspan="2">${esc(g.sec.t)}</th><th style="width:64px">AM</th><th style="width:64px">PM</th></tr></thead><tbody>
+    ${g.filas.map(r => `<tr><td style="width:28px">${r.n}</td><td style="text-align:left">${esc(r.txt)}</td><td>${chipRes(r.AM)}</td><td>${chipRes(r.PM)}</td></tr>`).join("")}</tbody></table></div>`).join("")}
+    <p class="sub" style="font-size:12.5px;margin-top:6px">${["AM", "PM"].map(t => { const r = d[0].regs[t]; return `${t}: ${r ? esc(["A", "B"].map(S => r.partes[S] ? `${PARTE_CORTO[S]} ${r.partes[S].horaRegistro || ""} · ${r.partes[S].completadoPor || ""}` : `${PARTE_CORTO[S]} sin enviar`).join(" · ")) : "sin check list"}`; }).join("<br>")}</p>` : "";
   const hall = d.flatMap(x => x.hall);
   const ok = d.reduce((a, x) => a + x.slots.filter(s => s.cls === "ok").length, 0);
-  $("i-prev").innerHTML = `<h2 style="margin-bottom:2px">Informe diario · ${fmtFecha(f)}</h2>
+  $("i-prev").innerHTML = `<h2 style="margin-bottom:2px">Informe diario · ${uno ? esc(uno.nombre) : "Consolidado"} · ${fmtFecha(f)}</h2>
     <p class="sub">${ok} de ${d.length * 4} controles completos · ${hall.length} hallazgo${hall.length !== 1 ? "s" : ""} en el día</p>
     <div class="table-wrap" style="margin-top:10px"><table class="rep-table"><thead><tr><th>Sala</th><th>AM antes</th><th>AM después</th><th>PM antes</th><th>PM después</th><th>Cumpl.</th></tr></thead><tbody>
     ${d.map(x => `<tr><td><b>${esc(x.s.nombre)}</b></td>${x.slots.map(s => `<td><span class="chip ${s.cls}">${s.cls === "ok" ? "✓" : s.cls === "warn" ? "◐" : s.cls === "bad" ? "✕" : "…"}</span></td>`).join("")}<td class="pct">${pctTxt(x.pct)}</td></tr>`).join("")}
     </tbody></table></div>
+    ${detalle}
     <h3 style="margin-top:16px">Hallazgos del día</h3>
     ${hall.length ? hall.map(h => `<div class="hall">${imgFoto(h.it.foto, "thumb", itemText(h.k))}<div class="body"><div class="what">${esc(itemText(h.k))}</div><div class="meta">Sala ${esc(h.r.sala)} · ${h.r.turno} · ${PARTE_LBL[h.k[0]]}</div><blockquote>${esc(h.it.obs)}</blockquote></div></div>`).join("") : `<p class="sub">Sin hallazgos en esta fecha.</p>`}`;
   hidratarFotos($("i-prev"));
 }
 $("i-fecha").onchange = () => conDatos($("i-fecha").value, $("i-fecha").value, renderInf);
+$("i-campo").onchange = () => conDatos($("i-fecha").value, $("i-fecha").value, renderInf);
 const libs = {};
 function loadScript(src){ return libs[src] || (libs[src] = new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => { delete libs[src]; rej(new Error("load")); }; document.head.appendChild(s); })); }
 function descargar(nombre, blob){
@@ -915,16 +935,26 @@ async function imgJpeg(src){
   c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.75);
 }
 $("i-pdf").onclick = async () => {
-  const f = $("i-fecha").value, d = datosDia(f);
+  const f = $("i-fecha").value, d = datosDia(f), uno = infSala();
   try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"); await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"); }
   catch { toast("No se pudo cargar el generador de PDF. Revisa la conexión."); return; }
   const doc = new window.jspdf.jsPDF({unit: "mm", format: "a4"});
   doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("Informe diario · Check list de ordeña", 14, 18);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.text(`Puduhue · ${fmtFecha(f)}`, 14, 25);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.text(`Puduhue · ${uno ? "Campo " + uno.nombre : "Consolidado de todos los campos"} · ${fmtFecha(f)}`, 14, 25);
   const sym = s => s.cls === "ok" ? "Completo" : s.cls === "warn" ? "Incompleto" : s.cls === "bad" ? "No se hizo" : "Pendiente";
   doc.autoTable({startY: 31, head: [["Sala", "AM antes", "AM después", "PM antes", "PM después", "Cumpl."]], body: d.map(x => [x.s.nombre, ...x.slots.map(sym), pctTxt(x.pct)]), styles: {fontSize: 9}, headStyles: {fillColor: [44, 79, 160]},
     didParseCell: c => { if (c.section === "body" && c.column.index >= 1 && c.column.index <= 4){ const t = c.cell.raw; c.cell.styles.textColor = t === "Completo" ? [30, 122, 70] : t === "No se hizo" ? [179, 38, 30] : t === "Incompleto" ? [154, 98, 0] : [107, 119, 128]; } }});
   let y = doc.lastAutoTable.finalY + 10;
+  if (uno && d[0]){
+    const quien = t => { const r = d[0].regs[t]; return r ? ["A", "B"].map(S => r.partes[S] ? `${PARTE_CORTO[S]} ${r.partes[S].horaRegistro || ""} ${r.partes[S].completadoPor || ""}`.trim() : `${PARTE_CORTO[S]} sin enviar`).join(" · ") : "sin check list"; };
+    doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text("Detalle del check list", 14, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(doc.splitTextToSize(`AM: ${quien("AM")}   |   PM: ${quien("PM")}`, 182), 14, y + 5);
+    const body = detalleCampo(d[0]).flatMap(g => [[{content: g.sec.t, colSpan: 4, styles: {fontStyle: "bold", fillColor: [234, 239, 248]}}], ...g.filas.map(r => [r.n, r.txt, r.AM ? RES_TXT[r.AM.estado] : "—", r.PM ? RES_TXT[r.PM.estado] : "—"])]);
+    doc.autoTable({startY: y + 10, head: [["N°", "Ítem", "AM", "PM"]], body, styles: {fontSize: 8.5}, headStyles: {fillColor: [44, 79, 160]}, columnStyles: {0: {cellWidth: 9}, 2: {cellWidth: 22}, 3: {cellWidth: 22}},
+      didParseCell: c => { if (c.section === "body" && c.column.index >= 2){ const t = c.cell.raw; c.cell.styles.textColor = t === "Cumple" ? [30, 122, 70] : t === "No cumple" ? [179, 38, 30] : [107, 119, 128]; } }});
+    y = doc.lastAutoTable.finalY + 10;
+    if (y > 260){ doc.addPage(); y = 18; }
+  }
   const hall = d.flatMap(x => x.hall);
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(`Hallazgos del día (${hall.length})`, 14, y); y += 6;
   doc.setFont("helvetica", "normal"); doc.setFontSize(10);
@@ -937,13 +967,13 @@ $("i-pdf").onclick = async () => {
     doc.setTextColor(179, 38, 30); doc.text(doc.splitTextToSize(h.it.obs || "", 135), 58, y + 21); doc.setTextColor(0);
     y += 36;
   }
-  descargar(`Informe_Ordena_${f}.pdf`, doc.output("blob"));
+  descargar(infNombre(f, "pdf"), doc.output("blob"));
 };
 async function excel(nombre, regs, consolidado){
   try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"); } catch { toast("No se pudo cargar el generador de Excel. Revisa la conexión."); return; }
   const wb = XLSX.utils.book_new();
   const add = (aoa, name, w) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = w.map(x => ({wch: x})); XLSX.utils.book_append_sheet(wb, ws, name); };
-  if (consolidado) add([["Sala", "AM antes", "AM después", "PM antes", "PM después", "% Cumplimiento"], ...consolidado.map(x => [x.s.nombre, ...x.slots.map(s => s.txt), x.pct === null ? "" : x.pct / 100])], "Consolidado", [16, 16, 16, 16, 16, 14]);
+  if (consolidado) add([["Sala", "AM antes", "AM después", "PM antes", "PM después", "% Cumplimiento"], ...consolidado.map(x => [x.s.nombre, ...x.slots.map(s => s.txt), x.pct === null ? "" : x.pct / 100])], consolidado.length === 1 ? "Campo" : "Consolidado", [16, 16, 16, 16, 16, 14]);
   const res = [["Fecha", "Turno", "Sala", "Parte", "Responsable", "Hora", "Administrador", "Respondidos", "Cumple", "No cumple", "N/A"]];
   const det = [["Fecha", "Turno", "Sala", "Parte", "N°", "Ítem", "Resultado", "Observación", "Responsable"]];
   const hal = [["Fecha", "Turno", "Sala", "Parte", "Ítem", "Observación", "Estado", "Solución", "Cerrado por", "Fecha cierre"]];
@@ -956,7 +986,7 @@ async function excel(nombre, regs, consolidado){
   const wbout = XLSX.write(wb, {type: "array", bookType: "xlsx"});
   descargar(nombre, new Blob([wbout], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
 }
-$("i-xlsx").onclick = () => { const f = $("i-fecha").value; excel(`Informe_Ordena_${f}.xlsx`, ["AM", "PM"].flatMap(t => visibles().map(s => registro(s.id, f, t)).filter(Boolean)), datosDia(f)); };
+$("i-xlsx").onclick = () => { const f = $("i-fecha").value; excel(infNombre(f, "xlsx"), ["AM", "PM"].flatMap(t => infSalas().map(s => registro(s.id, f, t)).filter(Boolean)), datosDia(f)); };
 $("r-xlsx").onclick = () => excel(`Checklist_Ordena_${$("r-desde").value}_a_${$("r-hasta").value}.xlsx`, filtradosHist());
 
 /* ================= SALAS Y QR ================= */
