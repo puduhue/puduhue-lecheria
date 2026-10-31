@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check List Ordeña · Puduhue</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ordeña Prueba">
+<meta name="theme-color" content="#F3F5F6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+
+/* Layout: sticky header + tab bar; single column app at phone width, two columns for summary on desktop. Stainless-steel neutrals, cold-chain blue accent. */
+:root{
+  --bg:#F3F5F6; --surface:#FFFFFF; --surface-2:#E8ECEE; --line:#D3DADE;
+  --fg:#17232B; --muted:#5A6A74; --accent:#2C4FA0; --accent-fg:#FFFFFF; --accent-soft:#DFE6F5; --brown:#5C3815; --green:#268A38;
+  --ok:#1E7A46; --ok-soft:#DDF1E4; --bad:#B3261E; --bad-soft:#F9E0DE; --na:#6B7780; --na-soft:#E6EAEC;
+  --warn:#9A6200; --warn-soft:#FBEED5;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F161B; --surface:#172129; --surface-2:#1F2B34; --line:#2C3A44;
+  --fg:#E4EAEE; --muted:#93A3AD; --accent:#8AA6E6; --accent-fg:#0B1620; --accent-soft:#1E2B4A; --brown:#D9A877; --green:#6CC07C;
+  --ok:#5CC38A; --ok-soft:#163626; --bad:#F08A80; --bad-soft:#3D1D1B; --na:#9AA6AE; --na-soft:#26323A;
+  --warn:#E5B35A; --warn-soft:#3A2E16; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:600}
+.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:24px;font-weight:700}
+.brand-id{display:flex;align-items:center;gap:10px}
+.brand-id img{width:44px;height:44px;border-radius:50%;background:#fff;padding:2px;flex:0 0 auto}
+.brand-id .org{font:700 12px var(--f-display);letter-spacing:.18em;color:var(--brown);display:block;line-height:1}
+.brand .code{color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:none;color:var(--muted);font:600 15px var(--f-display);letter-spacing:.03em;padding:8px 12px 10px;border-bottom:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav.tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--bad);color:var(--surface);font:600 11px/18px var(--f-body);text-align:center}
+section.view{padding-top:18px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 160px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 14px var(--f-body);border-radius:8px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.notice{border-radius:8px;padding:10px 12px;font-size:14px}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.info{background:var(--accent-soft);color:var(--fg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font:700 28px var(--f-display);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.na{background:var(--na-soft);color:var(--na)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.table-wrap{overflow-x:auto}
+table.status{width:100%;border-collapse:collapse;font-size:14px}
+table.status th,table.status td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.status th{font-weight:600}
+.slot{border:0;background:none;padding:0;cursor:pointer;font:inherit}
+.empty{color:var(--muted);text-align:center;padding:24px 12px}
+/* checklist form */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:8px;border-bottom:2px solid var(--fg)}
+.sec-head .code{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:8px}
+.progress span{display:block;height:100%;background:var(--accent);transition:width .2s}
+.item{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item-head{display:flex;gap:10px;align-items:flex-start}
+.item-head .n{flex:0 0 28px;height:28px;border-radius:6px;background:var(--surface-2);font:600 13px var(--f-mono);display:flex;align-items:center;justify-content:center}
+.item-head p{margin:3px 0 0;min-width:0}
+.item[data-state="C"] .item-head .n{background:var(--ok-soft);color:var(--ok)}
+.item[data-state="NC"] .item-head .n{background:var(--bad-soft);color:var(--bad)}
+.item[data-state="NA"] .item-head .n{background:var(--na-soft);color:var(--na)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-left:38px}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:10px 4px;font:600 14px var(--f-body);cursor:pointer}
+.seg button[data-v="C"][aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.seg button[data-v="NC"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+#f-turno button{font:700 17px var(--f-display);letter-spacing:.04em;padding:12px 4px}
+#f-turno button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg button[data-v="NA"][aria-pressed="true"]{background:var(--na);border-color:var(--na);color:var(--surface)}
+.extra{margin-left:38px;display:flex;flex-direction:column;gap:8px}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.thumb{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--surface-2)}
+.req{color:var(--bad);font-size:12.5px;font-weight:600}
+.important{border-left:4px solid var(--warn);background:var(--warn-soft);color:var(--fg);border-radius:0 8px 8px 0;padding:12px 14px;font-size:14px}
+.important ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.savebar-in{max-width:980px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.savebar .msg{font-size:13.5px;color:var(--muted);min-width:0;flex:1 1 200px}
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.li:last-child{border-bottom:0}
+.li .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.li .meta{font-size:13px;color:var(--muted)}
+.li-actions{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;max-width:calc(100% - 32px)}
+dialog{border:0;border-radius:12px;padding:0;width:min(760px,calc(100% - 24px));max-height:90vh;background:var(--surface);color:var(--fg)}
+dialog::backdrop{background:rgba(10,20,28,.55)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.dlg-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px}
+.kv div{display:flex;flex-direction:column}
+.detail-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.detail-item .t{flex:1;min-width:0}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+.salahdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.salahdr .chip{font-size:13px}
+.syncbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 0 10px}
+.syncbar .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.syncbar.pend .dot{background:var(--warn)}
+.syncbar.off .dot{background:var(--na)}
+.syncbar.err .dot{background:var(--bad)}
+.center{max-width:520px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.center img{width:88px;height:88px}
+.tema-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:36px;height:36px;padding:0;font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;line-height:1.3;text-align:left;background:var(--surface)}
+input::-webkit-date-and-time-value{text-align:left;margin:0}
+.hr-row{display:flex;gap:8px;align-items:stretch;min-width:0}
+.hr-row input{flex:1 1 auto;width:auto}
+.hr-row .btn{flex:0 0 auto}
+.fijo{min-height:44px;display:flex;align-items:center;padding:9px 10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-weight:600}
+.card,.field,.grid2>*{min-width:0}
+.seg.partes{margin:0;grid-template-columns:1fr 1fr}
+#f-turno button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px}
+#f-turno .pt{font:700 18px var(--f-display);letter-spacing:.04em}
+#f-turno button[aria-pressed="true"] .chip{background:var(--surface)}
+.quien{font:600 12px var(--f-body);opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.ro .ro-res{margin-left:38px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.item.ro .ro-obs{font-size:14px;color:var(--bad);background:var(--bad-soft);padding:6px 10px;border-radius:6px}
+input:disabled,button:disabled{opacity:.6}
+.seg.partes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px}
+.seg.partes .pt{font:700 16px var(--f-display);letter-spacing:.02em}
+.seg.partes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg.partes button[aria-pressed="true"] .chip{background:var(--surface);}
+
+/* v11: computador y todos los navegadores — mismo alto en todos los campos, listas desplegables iguales en Chrome, Edge, Safari y Firefox, y realce al pasar el mouse */
+html{scrollbar-gutter:stable}
+:root{--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%235A6A74' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2393A3AD' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}}
+:root[data-theme="dark"]{--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2393A3AD' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),select,.fijo{height:44px;min-height:44px}
+:root select:not([multiple]):not([size]){-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:var(--chev);background-repeat:no-repeat;background-position:right 10px center;background-size:16px 16px;padding-right:34px;text-overflow:ellipsis}
+input[type="date"],input[type="time"]{-webkit-appearance:auto;appearance:auto}
+@supports (-webkit-touch-callout:none){input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none}}
+@media (hover:hover) and (pointer:fine){
+  .btn,.seg button,.slot,nav.tabs button,.tema-btn{transition:background-color .12s,border-color .12s,box-shadow .12s,filter .12s,color .12s}
+  .btn:not(:disabled):not(.primary):hover{background:var(--surface-2)}
+  .btn.primary:not(:disabled):hover{filter:brightness(1.08)}
+  .seg button:not([aria-pressed="true"]):not(:disabled):hover{border-color:var(--accent)}
+  .slot:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(16,40,64,.1)}
+  nav.tabs button:not([aria-selected="true"]):hover{color:var(--fg)}
+  .tema-btn:hover{background:var(--surface-2)}
+}
+</style>
+<script src="config.js"></script>
+<script>try{var t=localStorage.getItem("lec.tema");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in" style="padding-bottom:0">
+    <div class="brand">
+      <div class="brand-id"><img src="logo.png" alt=""><div><span class="org">PUDUHUE</span><h1>Check List Ordeña</h1></div></div>
+      <div class="salahdr"><span class="chip ok" id="sala-chip" hidden></span><span class="mono" id="ver"></span><button class="tema-btn" type="button" data-tema></button></div>
+    </div>
+    <div class="syncbar off" id="sync"><span class="dot"></span><span id="sync-txt">Iniciando…</span><button class="btn small" id="sync-now" type="button" hidden>Subir ahora</button></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="demo-bar" class="notice warn" style="margin-top:16px" hidden><b>Vista previa · modo demostración.</b> Lo que guardes aquí queda solo en este navegador y no llega a OneDrive. <button class="btn small" id="demo-cambiar" type="button" style="margin-left:6px">Cambiar sala</button></div>
+  <div id="v-demo" class="center" hidden>
+    <h2>Elige una sala para probar</h2>
+    <p style="color:var(--muted);margin:0">En la app real, cada ordeñador entra escaneando el QR de su sala.</p>
+    <div class="row" id="demo-salas" style="justify-content:center;gap:8px"></div>
+  </div>
+  <div id="v-noqr" class="center" hidden>
+    <img src="logo.png" alt="">
+    <h2>Escanea el QR de tu sala</h2>
+    <p style="color:var(--muted);margin:0">Abre la cámara del teléfono, apunta al código QR pegado en la sala de ordeña y toca el enlace. Si no lo tienes, pídeselo a la administración.</p>
+  </div>
+  <div id="v-msg" class="notice bad" style="margin-top:16px" hidden></div>
+
+  <section class="view" id="v-form" hidden>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="grid2">
+        <label class="field"><span class="lbl">Fecha</span><input type="date" id="f-fecha"></label>
+        <div class="field"><span class="lbl">Turno * — se completa dos veces al día</span>
+          <div class="seg" id="f-turno" style="margin:0;grid-template-columns:repeat(2,1fr)"><button type="button" data-v="AM">AM</button><button type="button" data-v="PM">PM</button></div></div>
+      </div>
+      <div class="field" style="gap:6px;flex:none"><span class="lbl">Parte del check list</span>
+        <div class="seg partes" id="f-parte"><button type="button" data-v="A"></button><button type="button" data-v="B"></button></div></div>
+      <div id="f-existing" class="notice info" hidden></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="grid2">
+        <label class="field"><span class="lbl" id="f-quien-lbl">Responsable (quien completa) *</span><input id="f-quien" placeholder="Nombre y apellido" autocomplete="name"></label>
+        <div class="field"><span class="lbl" id="f-hr-lbl">Hora de llenado (automática)</span><div class="fijo" id="f-hr">Se registra sola al guardar</div></div>
+      </div>
+      <div class="grid2">
+        <label class="field"><span class="lbl">Administrador *</span><input id="f-admin" placeholder="Nombre del administrador"></label>
+        <div class="field"><span class="lbl">Área</span><div class="fijo">Sala de ordeña</div></div>
+      </div>
+    </div>
+    <div id="f-sections"></div>
+    <div class="important">
+      <strong>IMPORTANTE</strong>
+      <ul>
+        <li>Regla de responsabilidad: si la persona responsable no se encuentra trabajando, el responsable del cumplimiento es el administrador.</li>
+        <li>No forzar instrumentos eléctricos (como automáticos) en más de una oportunidad.</li>
+        <li>Hallazgos: registrar los hallazgos encontrados durante el día y hacer seguimiento en la pizarra de reuniones diarias.</li>
+      </ul>
+    </div>
+    <p style="text-align:center;margin:8px 0 0" id="link-admin"><a href="panel/" style="color:var(--muted);font-size:12.5px">Acceso administración</a></p>
+  </section>
+</div>
+
+<div class="savebar" id="savebar" hidden><div class="savebar-in"><span class="msg" id="save-msg"></span><button class="btn primary" id="f-save" type="button">Guardar check list</button></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const VERSION = "11";
+const SECCIONES = [
+  {k:"A", t:"A. Control previo a comenzar la ordeña", items:[
+    "Contar con ropa de trabajo limpia y EPP respectivo.",
+    "Verificar el suministro de agua de procesos (nivel de estanques y/o funcionamiento de bombas) y bebederos.",
+    "Verificar el suministro de energía en indicadores (220 V en cada fase o 380 V, según corresponda).",
+    "Asegurar el correcto funcionamiento del equipo electrógeno (automático), de ser necesario.",
+    "Verificar el correcto aseo del o los estanques de leche fresca, según corresponda.",
+    "Poner en marcha el sistema de frío de estanques y verificar la correcta conexión de mangueras y/o válvulas.",
+    "Instalar los filtros de partículas respectivos para leche fresca.",
+    "Verificar válvula (abrir flujo) del pre-enfriador de placas para leche fresca.",
+    "Chequear temperatura del agua caliente.",
+    "Inspección visual de motores y bombas de vacío.",
+    "Inspección visual de la dosificación de alimento por puesto y del sistema de alimentación en general.",
+    "Verificar existencia suficiente de dipping."]},
+  {k:"B", t:"B. Control posterior a la ordeña", items:[
+    "Verificar correcto suministro eléctrico.",
+    "Verificar correcto suministro de agua en instalación y potreros (estanques y bombas funcionando).",
+    "Chequear temperatura del agua caliente.",
+    "Verificar existencia suficiente de químicos y detergente para equipo y estanques de leche.",
+    "Verificar tendencia de frío (temperatura de la leche en estanque).",
+    "Tomar la muestra de antibiótico respectiva.",
+    "Dejar instalaciones ordenadas.",
+    "Aseo general de sala y patio de espera."]}
+];
+const ALL_KEYS = SECCIONES.flatMap(s => s.items.map((_, i) => s.k + (i + 1)));
+const itemText = k => SECCIONES.find(s => s.k === k[0]).items[+k.slice(1) - 1];
+const ESTADO_LBL = {C:"Cumple", NC:"No cumple", NA:"N/A"};
+const MAX_EDAD_MIN = 3;
+const DEMO = !!(window.LEC_CONFIG && window.LEC_CONFIG.DEMO);
+const API = DEMO ? "" : ((window.LEC_CONFIG && window.LEC_CONFIG.API_URL) || (location.hostname === "localhost" ? "" : null));
+const DEMO_SALAS = ["Cadenasso","Tradicional","Rotativa","Mi Tierra","Bellavista","Casa Anita","Radales","Ciruelillo"].map(n => ({id: "s-" + n.toLowerCase().replace(/ /g, ""), nombre: n, predio: ""}));
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtFecha = f => f ? f.split("-").reverse().join("/") : "";
+const ls = { get(k){ try { return localStorage.getItem(k); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch {} } };
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+$("ver").textContent = "v" + VERSION;
+
+let toastT;
+function toast(m, ms = 3200){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
+
+/* ---------- IndexedDB: borradores, fotos y cola de envío ---------- */
+const idb = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open("lecheria", 1);
+    r.onupgradeneeded = () => { const d = r.result; ["drafts","fotos","outbox","kv"].forEach(n => d.objectStoreNames.contains(n) || d.createObjectStore(n)); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = async (store, mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(store, mode); const s = t.objectStore(store); const r = fn(s); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); };
+  return {
+    get: (st, k) => tx(st, "readonly", s => s.get(k)),
+    put: (st, k, v) => tx(st, "readwrite", s => s.put(v, k)),
+    del: (st, k) => tx(st, "readwrite", s => s.delete(k)),
+    all: async st => { const d = await open(); return new Promise((res, rej) => { const out = []; const t = d.transaction(st, "readonly"); const c = t.objectStore(st).openCursor(); c.onsuccess = () => { const cur = c.result; if (cur){ out.push({key: cur.key, value: cur.value}); cur.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); }
+  };
+})();
+
+/* ---------- clave de la sala ---------- */
+const qp = new URLSearchParams(location.search);
+let clave = qp.get("k") || ls.get("lec.k") || "";
+if (qp.get("k")) ls.set("lec.k", qp.get("k"));
+let sala = null;
+try { sala = JSON.parse(ls.get("lec.sala") || "null"); } catch {}
+if (sala && sala.clave !== clave) sala = null;
+let dispositivo = ls.get("lec.dev"); if (!dispositivo){ dispositivo = "tel-" + rid(); ls.set("lec.dev", dispositivo); }
+
+const apiUrl = (p, params = {}) => { const u = new URL(API + p, location.href); u.searchParams.set("k", clave); for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v); return u.toString(); };
+async function api(p, params, opts = {}){
+  if (DEMO) return demoApi(p, params || {}, opts);
+  const r = await fetch(apiUrl(p, params), opts);
+  let j = null; try { j = await r.json(); } catch {}
+  if (!r.ok){ const e = new Error((j && j.mensaje) || ("Error " + r.status)); e.status = r.status; e.code = j && j.error; throw e; }
+  return j;
+}
+
+/* ---------- modo demostración (vista previa en Claude): todo queda en este navegador ---------- */
+async function demoApi(p, params, opts){
+  const s = DEMO_SALAS.find(x => "demo-" + x.id === clave);
+  if (!s){ const e = new Error("Sala de demostración no válida."); e.code = "clave"; throw e; }
+  await new Promise(r => setTimeout(r, 250));
+  const m = (opts.method || "GET").toUpperCase();
+  if (p === "/api/sala") return {sala: s, hoy: todayStr()};
+  if (p === "/api/registro" && m === "GET"){
+    const r = await idb.get("kv", `reg_${s.id}_${params.fecha}_${params.turno}`); if (!r) return {registro: null};
+    const partes = {}; for (const [S, x] of Object.entries(r.partes || {})) partes[S] = {...x, esTuyo: x.dispositivo === params.dispositivo};
+    return {registro: {...r, partes}};
+  }
+  if (p === "/api/foto" && m === "POST"){ await idb.put("kv", "foto_" + params.id, opts.body); return {ok: true, ruta: "demo/" + params.id}; }
+  if (p === "/api/registro" && m === "POST"){
+    const d = JSON.parse(opts.body), key = `reg_${s.id}_${d.fecha}_${d.turno}`, prev = await idb.get("kv", key);
+    const pp = prev?.partes?.[d.parte];
+    if (pp && pp.dispositivo !== d.dispositivo){ const e = new Error("Esta parte ya la envió otra persona desde otro teléfono."); e.code = "bloqueado"; throw e; }
+    if (pp && d.fecha !== todayStr()){ const e = new Error("Este check list es de un día anterior y ya está cerrado."); e.code = "cerrado"; throw e; }
+    const items = {};
+    for (const [k, it] of Object.entries(prev?.items || {})) if (k[0] !== d.parte) items[k] = it;
+    for (const [k, it] of Object.entries(d.items)) if (k[0] === d.parte) items[k] = it;
+    const ahora = new Date().toISOString();
+    const partes = {...(prev?.partes || {}), [d.parte]: {completadoPor: d.completadoPor, horaRegistro: pp?.horaRegistro || d.horaRegistro, actualizadoEn: ahora, dispositivo: d.dispositivo}};
+    const doc = {id: `${s.id}_${d.fecha}_${d.turno}`, salaId: s.id, sala: s.nombre, predio: "", fecha: d.fecha, turno: d.turno,
+      area: d.area || prev?.area || "", administrador: d.administrador || prev?.administrador || "", responsable: d.responsable || prev?.responsable || "",
+      partes, items, seguimiento: prev?.seguimiento || {}, creadoEn: prev?.creadoEn || ahora, actualizadoEn: ahora};
+    const n = ALL_KEYS.filter(k => items[k]).length;
+    doc.estado = n === ALL_KEYS.length ? "completo" : n ? "parcial" : "vacío";
+    await idb.put("kv", key, doc); return {ok: true, estado: doc.estado};
+  }
+  throw new Error("Ruta no disponible en demostración.");
+}
+
+/* ---------- estado del formulario ---------- */
+let draft = null, saving = false, remoto = null, remotos = {AM: null, PM: null};
+const slotKey = (f, t) => `${f}_${t}`;
+const secKeys = S => ALL_KEYS.filter(k => k[0] === S);
+const PARTE_LBL = {A: "Antes de ordeñar", B: "Después de ordeñar"};
+const AREA = "Sala de ordeña";
+const defaultTurno = () => new Date().getHours() < 12 ? "AM" : "PM";
+function emptyDraft(fecha, turno){
+  const q = ls.get("lec.quien") || "";
+  return { fecha, turno, parte: null, area: AREA, administrador: ls.get("lec.admin") || "", responsable: "",
+    partes: {A: {completadoPor: q, horaRegistro: ""}, B: {completadoPor: q, horaRegistro: ""}}, items: {}, mod: {A: false, B: false}, est: {A: null, B: null} };
+}
+/* Una parte enviada solo se puede modificar desde el mismo teléfono y el mismo día.
+   Desde otro teléfono, o en días anteriores, se ve en modo lectura. */
+function bloqueo(S){
+  const p = remoto?.partes?.[S];
+  if (!p || p.desbloqueada) return null;
+  if (!p.esTuyo) return {tipo: "otro", p};
+  if (draft.fecha !== todayStr()) return {tipo: "cerrado", p};
+  return null;
+}
+const ro = () => !!bloqueo(draft.parte);
+function parteInfo(S){
+  const tot = secKeys(S).length, n = secKeys(S).filter(k => draft.items[k]?.estado).length;
+  if (draft.mod[S]) return {txt: `${n}/${tot} · sin guardar`, cls: "warn"};
+  if (draft.est[S] === "pendiente") return {txt: `${n}/${tot} · por enviar`, cls: "warn"};
+  if (draft.est[S] === "enviado") return n === tot ? {txt: "Completa", cls: "ok"} : {txt: `${n}/${tot} · incompleta`, cls: "warn"};
+  return n ? {txt: `${n}/${tot}`, cls: "warn"} : {txt: "Pendiente", cls: "na"};
+}
+function sugerirParte(){ return secKeys("A").every(k => draft.items[k]?.estado) && draft.est.A ? "B" : "A"; }
+async function persistDraft(){ if (draft) await idb.put("drafts", slotKey(draft.fecha, draft.turno), draft); }
+async function patchDraft(fecha, turno, fn){
+  if (draft && draft.fecha === fecha && draft.turno === turno){ fn(draft); await persistDraft(); return true; }
+  const d = await idb.get("drafts", slotKey(fecha, turno)); if (d){ fn(d); await idb.put("drafts", slotKey(fecha, turno), d); }
+  return false;
+}
+function mergeRemoto(r){
+  for (const S of ["A", "B"]){
+    const forzar = !!bloqueo(S);
+    if (forzar){ draft.mod[S] = false; if (draft.est[S] === "pendiente") draft.est[S] = "enviado"; }
+    else if (draft.mod[S] || draft.est[S] === "pendiente") continue;
+    if (!secKeys(S).some(k => r.items?.[k])) continue;
+    secKeys(S).forEach(k => { const it = r.items[k]; if (it) draft.items[k] = {estado: it.estado, obs: it.obs || "", foto: it.foto || undefined}; else delete draft.items[k]; });
+    const pm = r.partes?.[S] || (!r.partes && r.completadoPor ? r : null);
+    if (pm) draft.partes[S] = {completadoPor: pm.completadoPor || "", horaRegistro: pm.horaRegistro || ""};
+    draft.est[S] = "enviado";
+  }
+  if (!draft.mod.A && !draft.mod.B && r.administrador) draft.administrador = r.administrador;
+}
+async function loadSlot(fecha, turno, parte){
+  draft = (await idb.get("drafts", slotKey(fecha, turno))) || emptyDraft(fecha, turno);
+  draft.mod = draft.mod || {A: false, B: false}; draft.est = draft.est || {A: null, B: null};
+  draft.partes = draft.partes || {A: {completadoPor: "", horaRegistro: ""}, B: {completadoPor: "", horaRegistro: ""}};
+  for (const S of ["A", "B"]) if (await idb.get("outbox", `${slotKey(fecha, turno)}_${S}`)) draft.est[S] = "pendiente";
+  draft.parte = parte || sugerirParte();
+  remotos = {AM: null, PM: null}; remoto = null; renderForm();
+  if (navigator.onLine && API !== null){
+    try {
+      const [am, pm] = await Promise.all(["AM", "PM"].map(t => api("/api/registro", {fecha, turno: t, dispositivo})));
+      if (draft.fecha !== fecha || draft.turno !== turno) return;
+      remotos = {AM: am.registro, PM: pm.registro}; remoto = remotos[turno];
+      if (remoto){ mergeRemoto(remoto); if (!parte && !draft.mod.A && !draft.mod.B) draft.parte = sugerirParte(); await persistDraft(); }
+      renderForm();
+    } catch {}
+  }
+}
+
+/* ---------- render ---------- */
+const fotoUrls = {};
+function thumbHtml(it){
+  if (it.fotoLocal) return `<img class="thumb" alt="Foto" data-local="${esc(it.fotoLocal)}" ${fotoUrls[it.fotoLocal] ? `src="${fotoUrls[it.fotoLocal]}"` : ""}>`;
+  if (it.foto && it.foto.startsWith("demo/")) return `<img class="thumb" alt="Foto" data-demo="${esc(it.foto.slice(5))}">`;
+  if (it.foto && API !== null) return `<img class="thumb" alt="Foto" loading="lazy" src="${esc(apiUrl("/api/foto", {ruta: it.foto}))}">`;
+  return "";
+}
+async function hydrate(root){
+  for (const img of root.querySelectorAll("img[data-local]")){
+    const id = img.dataset.local; if (fotoUrls[id]){ img.src = fotoUrls[id]; continue; }
+    const b = await idb.get("fotos", id); if (b){ fotoUrls[id] = URL.createObjectURL(b); img.src = fotoUrls[id]; }
+  }
+  for (const img of root.querySelectorAll("img[data-demo]")){
+    const id = "d" + img.dataset.demo; if (!fotoUrls[id]){ const b = await idb.get("kv", "foto_" + img.dataset.demo); if (b) fotoUrls[id] = URL.createObjectURL(b); }
+    if (fotoUrls[id]) img.src = fotoUrls[id];
+  }
+}
+function itemHtml(k){
+  const it = draft.items[k] || {};
+  const st = it.estado || "", nc = st === "NC", conFoto = st === "C" || st === "NC";
+  const tiene = it.fotoLocal || it.foto;
+  if (ro()) return `<div class="item ro" data-k="${k}" data-state="${st}">
+    <div class="item-head"><span class="n">${k.slice(1)}</span><p>${esc(itemText(k))}</p></div>
+    <div class="ro-res"><span class="chip ${st === "C" ? "ok" : st === "NC" ? "bad" : st === "NA" ? "na" : "na"}">${st ? ESTADO_LBL[st] : "Sin respuesta"}</span>${it.obs ? `<span class="ro-obs">${esc(it.obs)}</span>` : ""}${tiene ? thumbHtml(it) : ""}</div></div>`;
+  return `<div class="item" data-k="${k}" data-state="${st}">
+    <div class="item-head"><span class="n">${k.slice(1)}</span><p>${esc(itemText(k))}</p></div>
+    <div class="seg">${["C","NC","NA"].map(v => `<button type="button" data-v="${v}" aria-pressed="${st===v}">${ESTADO_LBL[v]}</button>`).join("")}</div>
+    <div class="extra" ${st ? "" : "hidden"}>
+      <textarea data-obs="${k}" placeholder="${nc ? "Describe el hallazgo (obligatorio)" : "Observación (opcional)"}">${esc(it.obs || "")}</textarea>
+      ${nc ? `<span class="req" data-reqobs="${k}" ${it.obs?.trim() ? "hidden" : ""}>Falta la observación</span>` : ""}
+      <div class="photo-row" ${conFoto ? "" : "hidden"}>
+        ${thumbHtml(it)}
+        <label class="btn small" style="cursor:pointer"><span>${tiene ? "Repetir foto" : "Tomar foto"}</span>
+          <input type="file" accept="image/*" capture="environment" data-foto="${k}" hidden></label>
+        ${conFoto && !tiene ? `<span class="req">Foto obligatoria</span>` : ""}
+      </div>
+    </div></div>`;
+}
+function turnoInfo(t){
+  const r = remotos[t];
+  if (t === draft.turno){
+    const env = ["A", "B"].filter(S => draft.est[S] === "enviado" || draft.est[S] === "pendiente");
+    const quien = [...new Set(env.map(S => draft.partes[S]?.completadoPor).filter(Boolean))];
+    const completo = env.length === 2 && ALL_KEYS.every(k => draft.items[k]?.estado);
+    return {n: env.length, completo, quien};
+  }
+  const env = r ? ["A", "B"].filter(S => r.partes?.[S]) : [];
+  return {n: env.length, completo: env.length === 2 && ALL_KEYS.every(k => r.items?.[k]), quien: [...new Set(env.map(S => r.partes[S].completadoPor).filter(Boolean))]};
+}
+function renderTurnos(){
+  document.querySelectorAll("#f-turno button").forEach(b => {
+    const t = b.dataset.v, i = turnoInfo(t);
+    const chip = i.completo ? `<span class="chip ok">Listo</span>` : i.n ? `<span class="chip warn">${i.n} de 2 partes</span>` : `<span class="chip na">Pendiente</span>`;
+    b.setAttribute("aria-pressed", t === draft.turno);
+    b.innerHTML = `<span class="pt">${t}</span>${chip}${i.quien.length ? `<span class="quien">${esc(i.quien.join(" · "))}</span>` : ""}`;
+  });
+}
+function renderPartes(){
+  renderTurnos();
+  document.querySelectorAll("#f-parte button").forEach(b => {
+    const S = b.dataset.v, inf = parteInfo(S), p = draft.partes[S], bl = bloqueo(S);
+    const enviada = draft.est[S] === "enviado" || draft.est[S] === "pendiente";
+    b.setAttribute("aria-pressed", S === draft.parte);
+    b.innerHTML = `<span class="pt">${PARTE_LBL[S]}</span><span class="chip ${inf.cls}">${bl ? "🔒 " : ""}${inf.txt}</span>${enviada && p?.completadoPor ? `<span class="quien">${esc(p.completadoPor)}${p.horaRegistro ? " · " + esc(p.horaRegistro) : ""}</span>` : ""}`;
+  });
+  $("f-quien-lbl").textContent = `Responsable de «${PARTE_LBL[draft.parte]}» (quien completa) *`;
+  $("f-hr-lbl").textContent = "Hora de llenado (automática)";
+  $("f-save").textContent = draft.parte === "A" ? "Guardar · Antes" : "Guardar · Después";
+  const bloq = ro();
+  ["f-quien", "f-admin"].forEach(id => $(id).disabled = bloq);
+  $("f-save").hidden = bloq;
+}
+function renderForm(){
+  $("v-form").hidden = false; $("savebar").hidden = false;
+  $("f-fecha").value = draft.fecha;
+  document.querySelectorAll("#f-turno button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === draft.turno));
+  const P = draft.partes[draft.parte];
+  $("f-quien").value = P.completadoPor || ""; $("f-hr").textContent = P.horaRegistro && draft.est[draft.parte] ? P.horaRegistro : "Se registra sola al guardar";
+  $("f-admin").value = draft.administrador || "";
+  renderPartes();
+  const ex = $("f-existing"), est = draft.est[draft.parte], bl = bloqueo(draft.parte);
+  ex.className = "notice " + (bl ? "warn" : "info");
+  if (bl?.tipo === "otro"){ ex.hidden = false; ex.innerHTML = `🔒 <b>Solo lectura.</b> «${PARTE_LBL[draft.parte]}» del turno ${draft.turno} la envió <b>${esc(bl.p.completadoPor || "otra persona")}</b>${bl.p.horaRegistro ? " a las " + esc(bl.p.horaRegistro) : ""} desde otro teléfono. Puedes ver sus respuestas, pero solo esa persona puede modificarlas.`; }
+  else if (bl?.tipo === "cerrado"){ ex.hidden = false; ex.innerHTML = `🔒 <b>Solo lectura.</b> Este check list es de un día anterior y ya está cerrado. Si hay que corregir algo, pídelo a la administración.`; }
+  else if (est === "enviado" && remoto?.partes?.[draft.parte]?.desbloqueada && !draft.mod[draft.parte]){ ex.hidden = false; ex.textContent = `La administración habilitó la corrección de «${PARTE_LBL[draft.parte]}». Puedes modificarla y guardar.`; }
+  else if (est === "enviado" && !draft.mod[draft.parte] && draft.fecha === todayStr()){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» ya fue ${DEMO ? "guardada" : "enviada"} desde este teléfono. Puedes corregirla hasta el final del día; al guardar, reemplaza lo anterior.`; }
+  else if (draft.mod[draft.parte] && est) { ex.hidden = false; ex.textContent = `Estás modificando «${PARTE_LBL[draft.parte]}». Al guardar, reemplaza lo ${est === "pendiente" ? "guardado" : DEMO ? "guardado" : "enviado"} antes.`; }
+  else if (est === "pendiente"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» está guardada en este teléfono y se enviará cuando haya señal.`; }
+  else if (est === "enviado"){ ex.hidden = false; ex.textContent = `«${PARTE_LBL[draft.parte]}» ya fue ${DEMO ? "guardada" : "enviada"}. Si cambias algo y guardas, reemplaza lo anterior.`; }
+  else ex.hidden = true;
+  $("f-sections").innerHTML = SECCIONES.filter(s => s.k === draft.parte).map(s => {
+    const done = s.items.filter((_, i) => draft.items[s.k + (i+1)]?.estado).length;
+    return `<div class="card" style="margin-bottom:16px" data-sec="${s.k}">
+      <div class="sec-head"><h2>${esc(s.t)}</h2><span class="code" data-count="${s.k}">${done}/${s.items.length}</span></div>
+      <div class="progress"><span data-prog="${s.k}" style="width:${done*100/s.items.length}%"></span></div>
+      <div>${s.items.map((_, i) => itemHtml(s.k + (i+1))).join("")}</div></div>`;
+  }).join("");
+  hydrate($("f-sections")); updateSaveMsg();
+}
+function rerenderItem(k){
+  const el = document.querySelector(`.item[data-k="${k}"]`); if (!el) return;
+  el.outerHTML = itemHtml(k);
+  const s = SECCIONES.find(x => x.k === k[0]);
+  const done = s.items.filter((_, i) => draft.items[s.k + (i+1)]?.estado).length;
+  document.querySelector(`[data-count="${s.k}"]`).textContent = `${done}/${s.items.length}`;
+  document.querySelector(`[data-prog="${s.k}"]`).style.width = (done*100/s.items.length) + "%";
+  hydrate(document.querySelector(`.item[data-k="${k}"]`)); updateSaveMsg();
+}
+function problems(){
+  return secKeys(draft.parte).filter(k => { const it = draft.items[k]; if (!it?.estado || it.estado === "NA") return false;
+    return !(it.fotoLocal || it.foto) || (it.estado === "NC" && !it.obs?.trim()); });
+}
+function updateSaveMsg(){
+  const S = draft.parte, n = secKeys(S).filter(k => draft.items[k]?.estado).length, p = problems(), msg = $("save-msg");
+  if (ro()){ msg.innerHTML = `🔒 Solo lectura · ${esc(PARTE_LBL[S])}: ${n}/${secKeys(S).length} ítems`; $("f-save").disabled = true; renderPartes(); return; }
+  if (p.length) msg.innerHTML = `<span class="req">${p.length} ítem(s) sin foto${p.some(k => draft.items[k].estado === "NC") ? " u observación" : ""}: ${p.join(", ")}</span>`;
+  else msg.textContent = `${PARTE_LBL[S]}: ${n}/${secKeys(S).length} ítems${draft.mod[S] ? " · cambios sin guardar" : ""}`;
+  $("f-save").disabled = saving;
+  renderPartes();
+}
+function markDirty(){ draft.mod[draft.parte] = true; updateSaveMsg(); persistDraft(); }
+
+/* ---------- eventos del formulario ---------- */
+$("f-sections").addEventListener("click", e => {
+  const b = e.target.closest(".seg button"); if (!b || ro()) return;
+  const k = b.closest(".item").dataset.k;
+  const it = draft.items[k] = draft.items[k] || {};
+  it.estado = it.estado === b.dataset.v ? undefined : b.dataset.v;
+  if (!it.estado && !it.obs && !it.fotoLocal && !it.foto) delete draft.items[k];
+  markDirty(); rerenderItem(k);
+});
+$("f-sections").addEventListener("input", e => {
+  const k = e.target.dataset.obs; if (!k || ro()) return;
+  draft.items[k].obs = e.target.value; markDirty();
+  const rq = document.querySelector(`[data-reqobs="${k}"]`); if (rq) rq.hidden = !!e.target.value.trim();
+});
+$("f-sections").addEventListener("change", async e => {
+  const k = e.target.dataset.foto; if (!k || !e.target.files[0] || ro()) return;
+  const file = e.target.files[0];
+  const lbl = e.target.closest("label").querySelector("span"); lbl.textContent = "Procesando…";
+  if (!(await fotoReciente(file))){ toast(`Usa una foto tomada en este momento (máximo ${MAX_EDAD_MIN} minutos). No se aceptan fotos de la galería.`, 5000); rerenderItem(k); return; }
+  try {
+    const blob = await compress(file, `${sala ? sala.nombre : ""} · ${fmtFecha(draft.fecha)} ${draft.turno} · ítem ${k} · ${nowTime()}`);
+    const id = rid();
+    await idb.put("fotos", id, blob);
+    const it = draft.items[k];
+    it.fotoLocal = id; delete it.foto;
+    markDirty(); rerenderItem(k);
+  } catch { toast("No se pudo procesar la foto. Intenta de nuevo."); rerenderItem(k); }
+});
+$("f-parte").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.v === draft.parte) return;
+  draft.parte = b.dataset.v; await persistDraft(); renderForm();
+  $("f-parte").scrollIntoView({block: "start", behavior: "smooth"});
+});
+$("f-turno").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.v === draft.turno) return;
+  await persistDraft(); await loadSlot(draft.fecha, b.dataset.v);
+});
+$("f-fecha").addEventListener("change", async e => {
+  const v = e.target.value; if (!v){ e.target.value = draft.fecha; return; }
+  await persistDraft(); await loadSlot(v, draft.turno);
+});
+$("f-quien").addEventListener("input", e => { if (ro()) return; draft.partes[draft.parte].completadoPor = e.target.value; markDirty(); });
+$("f-admin").addEventListener("input", e => { if (ro()) return; draft.administrador = e.target.value; markDirty(); });
+
+/* ---------- fotos ---------- */
+async function exifFecha(file){
+  try {
+    const buf = new DataView(await file.slice(0, 131072).arrayBuffer());
+    if (buf.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while (o + 4 < buf.byteLength){
+      const m = buf.getUint16(o), len = buf.getUint16(o + 2);
+      if (m === 0xFFE1 && buf.getUint32(o + 4) === 0x45786966){
+        const t = o + 10, le = buf.getUint16(t) === 0x4949;
+        const u16 = x => buf.getUint16(x, le), u32 = x => buf.getUint32(x, le);
+        const readStr = (off, n) => { let r = ""; for (let i = 0; i < n - 1 && off + i < buf.byteLength; i++) r += String.fromCharCode(buf.getUint8(off + i)); return r; };
+        let found = null, exifIfd = null;
+        const scan = ifd => { const n = u16(t + ifd); for (let i = 0; i < n; i++){ const e = t + ifd + 2 + i * 12; const tag = u16(e);
+          if (tag === 0x8769) exifIfd = u32(e + 8);
+          if (tag === 0x9003 || (tag === 0x0132 && !found)) found = readStr(t + u32(e + 8), u32(e + 4)); } };
+        scan(u32(t + 4)); if (exifIfd) scan(exifIfd);
+        const mm = found && found.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+        return mm ? new Date(+mm[1], mm[2] - 1, +mm[3], +mm[4], +mm[5], +mm[6]) : null;
+      }
+      if ((m & 0xFF00) !== 0xFF00) break;
+      o += 2 + len;
+    }
+  } catch {}
+  return null;
+}
+async function fotoReciente(file){
+  const lim = MAX_EDAD_MIN * 60000, now = Date.now();
+  if (file.lastModified && now - file.lastModified > lim) return false;
+  const ex = await exifFecha(file);
+  if (ex && Math.abs(now - ex.getTime()) > lim + 60000) return false;
+  return true;
+}
+async function compress(file, marca){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    let max = 1400, q = 0.74, out;
+    for (let tries = 0; tries < 6; tries++){
+      const sc = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0, c.width, c.height);
+      if (marca){ const fs = Math.max(12, Math.round(c.width / 42)); g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, c.height - fs * 1.9, c.width, fs * 1.9);
+        g.fillStyle = "#fff"; g.font = `600 ${fs}px system-ui, sans-serif`; g.textBaseline = "middle"; g.fillText(marca, fs * 0.6, c.height - fs * 0.95, c.width - fs * 1.2); }
+      out = await new Promise(r => c.toBlob(r, "image/jpeg", q));
+      if (out.size < 400000) break;
+      max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.06);
+    }
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* ---------- guardar y cola de envío ---------- */
+$("f-save").onclick = async () => {
+  if (saving || ro()) return;
+  const S = draft.parte, P = draft.partes[S];
+  const p = problems();
+  if (p.length){ toast(`Falta foto (y observación si es "No cumple") en: ${p.join(", ")}`, 4500); return; }
+  if (!P.completadoPor?.trim()){ toast("Escribe el nombre del responsable (quien completa)."); $("f-quien").focus(); return; }
+  if (!draft.administrador?.trim()){ toast("Indica el nombre del administrador."); $("f-admin").focus(); return; }
+  if (!secKeys(S).some(k => draft.items[k]?.estado)){ toast("Responde al menos un ítem antes de guardar."); return; }
+  saving = true; $("f-save").disabled = true; $("f-save").textContent = "Guardando…";
+  /* La hora de llenado la pone la app al guardar por primera vez esta parte y después no cambia (las correcciones la conservan). */
+  if (!P.horaRegistro || !draft.est[S]) P.horaRegistro = nowTime();
+  try {
+    const items = {};
+    secKeys(S).forEach(k => { if (draft.items[k]?.estado) items[k] = JSON.parse(JSON.stringify(draft.items[k])); });
+    const job = { fecha: draft.fecha, turno: draft.turno, parte: S, area: AREA, administrador: draft.administrador.trim(), responsable: P.completadoPor.trim(),
+      completadoPor: P.completadoPor.trim(), horaRegistro: P.horaRegistro, items, creado: Date.now() };
+    await idb.put("outbox", `${slotKey(draft.fecha, draft.turno)}_${S}`, job);
+    draft.mod[S] = false; draft.est[S] = "pendiente"; await persistDraft();
+    ls.set("lec.quien", job.completadoPor); ls.set("lec.admin", job.administrador);
+    $("f-save").textContent = "Enviando…";
+    const ok = await trySync();
+    const completa = secKeys(S).every(k => draft.items[k]?.estado);
+    const verbo = DEMO ? "guardada" : "enviada";
+    if (!ok) toast("Guardado en este teléfono. Se enviará solo cuando vuelva la señal.", 4500);
+    else if (S === "A" && completa) toast(`«Antes de ordeñar» ${verbo}. Al terminar la ordeña, completa «Después de ordeñar».`, 5000);
+    else if (S === "B" && completa) toast(`«Después de ordeñar» ${verbo}.${secKeys("A").every(k => draft.items[k]?.estado) ? " Turno completo." : " Falta completar «Antes de ordeñar»."}`, 5000);
+    else toast(`Avance ${DEMO ? "guardado" : "enviado"}. Puedes completarlo más tarde.`);
+    renderForm();
+  } catch { toast("No se pudo guardar. Intenta de nuevo."); }
+  finally { saving = false; updateSaveMsg(); }
+};
+
+let syncing = false, lastErr = null;
+async function trySync(){
+  if (syncing || API === null || !clave) { await renderSync(); return false; }
+  syncing = true; lastErr = null; await renderSync();
+  let todoOk = true, tocaActual = false;
+  try {
+    const jobs = (await idb.all("outbox")).sort((a, b) => a.value.creado - b.value.creado);
+    for (const {key, value: job} of jobs){
+      for (const [k, it] of Object.entries(job.items)){
+        if (!it.fotoLocal) continue;
+        const blob = await idb.get("fotos", it.fotoLocal);
+        if (!blob){ delete it.fotoLocal; continue; }
+        const j = await api("/api/foto", {fecha: job.fecha, turno: job.turno, item: k, id: it.fotoLocal}, {method: "POST", body: blob, headers: {"Content-Type": "image/jpeg"}});
+        const old = it.fotoLocal; it.foto = j.ruta; delete it.fotoLocal;
+        await idb.put("outbox", key, job);
+        await patchDraft(job.fecha, job.turno, d => { if (d.items[k]?.fotoLocal === old){ d.items[k].foto = j.ruta; delete d.items[k].fotoLocal; } });
+        await idb.del("fotos", old);
+      }
+      const items = {};
+      for (const [k, it] of Object.entries(job.items)) if (it.estado) items[k] = {estado: it.estado, obs: it.obs || "", ...(it.foto ? {foto: it.foto} : {})};
+      try {
+        await api("/api/registro", {}, {method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({fecha: job.fecha, turno: job.turno, parte: job.parte, completadoPor: job.completadoPor, horaRegistro: job.horaRegistro, area: job.area,
+            administrador: job.administrador, responsable: job.responsable, items, dispositivo})});
+      } catch (e) {
+        if (e.code !== "bloqueado" && e.code !== "cerrado") throw e;
+        await idb.del("outbox", key);
+        await patchDraft(job.fecha, job.turno, d => { d.est[job.parte] = null; d.mod[job.parte] = false; });
+        showMsg(`No se pudo enviar «${PARTE_LBL[job.parte]}» del ${fmtFecha(job.fecha)} ${job.turno}: ${e.message}`);
+        if (draft && draft.fecha === job.fecha && draft.turno === job.turno) setTimeout(() => loadSlot(job.fecha, job.turno, job.parte), 50);
+        continue;
+      }
+      await idb.del("outbox", key);
+      if (await patchDraft(job.fecha, job.turno, d => { if (d.est[job.parte] === "pendiente") d.est[job.parte] = "enviado"; })) tocaActual = true;
+    }
+  } catch (e) {
+    todoOk = false; lastErr = e;
+    if (e.code === "clave") showMsg(e.message);
+  } finally { syncing = false; await renderSync(); if (tocaActual && draft && !saving) renderForm(); }
+  return todoOk;
+}
+async function renderSync(){
+  const n = (await idb.all("outbox")).length, el = $("sync"), t = $("sync-txt");
+  el.className = "syncbar";
+  $("sync-now").hidden = !n || syncing;
+  if (API === null){ el.classList.add("err"); t.textContent = "Servidor no configurado todavía."; return; }
+  if (DEMO && !syncing){ t.textContent = n ? `${n} check list(s) por guardar` : "Modo demostración · guardado en este navegador"; if (n) el.classList.add("pend"); return; }
+  if (syncing){ el.classList.add("pend"); t.textContent = "Enviando…"; return; }
+  if (!navigator.onLine){ el.classList.add("off"); t.textContent = n ? `Sin señal · ${n} check list(s) por enviar` : "Sin señal · lo que guardes se enviará después"; return; }
+  if (n){ el.classList.add(lastErr ? "err" : "pend"); t.textContent = `${n} check list(s) por enviar` + (lastErr ? " · reintentando" : ""); return; }
+  t.textContent = "Todo enviado";
+}
+$("sync-now").onclick = () => trySync();
+$("demo-cambiar").onclick = async () => { if (draft) await persistDraft(); clave = ""; ls.set("lec.k", ""); location.reload(); };
+window.addEventListener("online", () => trySync());
+window.addEventListener("offline", () => renderSync());
+setInterval(() => { if (navigator.onLine) trySync(); }, 60000);
+
+function showMsg(m){ const v = $("v-msg"); v.textContent = m; v.hidden = !m; }
+
+/* ---------- inicio ---------- */
+async function start(){
+  if (DEMO){
+    $("link-admin").hidden = true;
+    $("demo-bar").hidden = false;
+    if (!clave || !clave.startsWith("demo-")){
+      $("v-demo").hidden = false; $("demo-cambiar").hidden = true;
+      $("demo-salas").innerHTML = DEMO_SALAS.map(s => `<button class="btn" type="button" data-s="${s.id}">${esc(s.nombre)}</button>`).join("");
+      $("demo-salas").onclick = e => { const b = e.target.closest("button"); if (!b) return; clave = "demo-" + b.dataset.s; ls.set("lec.k", clave); ls.set("lec.sala", ""); sala = null; $("v-demo").hidden = true; start(); };
+      renderSync(); return;
+    }
+  }
+  if (!clave){ $("v-noqr").hidden = false; renderSync(); return; }
+  if (sala){ $("sala-chip").hidden = false; $("sala-chip").textContent = "Sala " + sala.nombre; }
+  if (API !== null && navigator.onLine){
+    try {
+      const j = await api("/api/sala");
+      sala = {...j.sala, clave}; ls.set("lec.sala", JSON.stringify(sala));
+      $("sala-chip").hidden = false; $("sala-chip").textContent = "Sala " + sala.nombre; showMsg("");
+    } catch (e) {
+      if (e.code === "clave"){ showMsg(e.message); ls.set("lec.sala", ""); sala = null; $("sala-chip").hidden = true; renderSync(); return; }
+    }
+  }
+  if (!sala && API !== null){ showMsg("Necesitas señal la primera vez para validar el QR de la sala."); renderSync(); return; }
+  await loadSlot(todayStr(), defaultTurno());
+  trySync();
+}
+start();
+
+if (!DEMO && "serviceWorker" in navigator && location.protocol === "https:"){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", async () => { if (reloading) return; reloading = true; await persistDraft(); location.reload(); });
+}
+})();
+
+/* ---------- modo claro / oscuro ---------- */
+(() => {
+  const btns = document.querySelectorAll("[data-tema]");
+  const actual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const pintar = () => btns.forEach(b => { const d = actual() === "dark"; b.textContent = d ? "☀️" : "🌙"; b.title = d ? "Cambiar a modo claro" : "Cambiar a modo oscuro"; b.setAttribute("aria-label", b.title); });
+  btns.forEach(b => b.onclick = () => { const n = actual() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("lec.tema", n); } catch {} pintar(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", pintar);
+  pintar();
+})();
+</script>
+</body>
+</html>
