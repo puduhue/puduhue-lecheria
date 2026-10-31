@@ -1135,7 +1135,7 @@ async function verificar(){
 async function iniciarMsal(){
   if (DEMO || !window.msal) return;
   msalApp = new msal.PublicClientApplication({auth: {clientId: MS.clientId, authority: MS.authority, redirectUri: location.origin + location.pathname},
-    cache: {cacheLocation: "localStorage"}});
+    cache: {cacheLocation: "sessionStorage"}}); // v12: sesión propia del panel (solo mientras la pestaña esté abierta): antes compartía la de Puduhue Terreno (misma aplicación de Microsoft y misma dirección) y «Usar otra cuenta» la cerraba también allá
   await msalApp.initialize();
   try { const res = await msalApp.handleRedirectPromise(); cuenta = res?.account || msalApp.getAllAccounts()[0] || null; }
   catch (e) { toast("Microsoft no completó el inicio de sesión: " + (e.errorMessage || e.message), 6000); }
